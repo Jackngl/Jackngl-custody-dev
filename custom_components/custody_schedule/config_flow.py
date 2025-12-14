@@ -82,36 +82,39 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Gather child information (step 1)."""
         errors: dict[str, str] = {}
         if user_input:
-            # Créer une copie propre des entrées en filtrant les clés inattendues
+            # Créer un dictionnaire propre avec seulement les champs attendus
             cleaned_input = {}
             
             # Traitement du nom de l'enfant
-            name_value = user_input.get(CONF_CHILD_NAME)
-            if isinstance(name_value, str):
-                display_name = name_value.strip()
-                formatted_name = _format_child_name(display_name)
-                if formatted_name:
-                    cleaned_input[CONF_CHILD_NAME_DISPLAY] = display_name
-                    cleaned_input[CONF_CHILD_NAME] = formatted_name
+            if CONF_CHILD_NAME in user_input:
+                name_value = user_input[CONF_CHILD_NAME]
+                if isinstance(name_value, str):
+                    display_name = name_value.strip()
+                    formatted_name = _format_child_name(display_name)
+                    if formatted_name:
+                        cleaned_input[CONF_CHILD_NAME_DISPLAY] = display_name
+                        cleaned_input[CONF_CHILD_NAME] = formatted_name
+                    else:
+                        errors[CONF_CHILD_NAME] = "invalid_child_name"
                 else:
                     errors[CONF_CHILD_NAME] = "invalid_child_name"
             else:
-                errors[CONF_CHILD_NAME] = "invalid_child_name"
+                errors[CONF_CHILD_NAME] = "missing_child_name"
 
             # Traitement de l'icône
-            icon_value = user_input.get(CONF_ICON)
-            if icon_value:
+            if CONF_ICON in user_input:
+                icon_value = user_input[CONF_ICON]
                 if isinstance(icon_value, str) and icon_value.startswith("mdi:"):
                     cleaned_input[CONF_ICON] = icon_value
                 else:
-                    errors[CONF_ICON] = "invalid_icon"
+                    cleaned_input[CONF_ICON] = "mdi:account-child"  # Valeur par défaut
             else:
                 cleaned_input[CONF_ICON] = "mdi:account-child"  # Valeur par défaut
 
             # Traitement de la photo
-            photo_value = user_input.get(CONF_PHOTO)
-            if isinstance(photo_value, str):
-                if photo_value.strip():
+            if CONF_PHOTO in user_input and user_input[CONF_PHOTO]:
+                photo_value = user_input[CONF_PHOTO]
+                if isinstance(photo_value, str) and photo_value.strip():
                     normalized, error_key = self._normalize_photo(photo_value)
                     if error_key:
                         errors[CONF_PHOTO] = error_key
@@ -125,11 +128,12 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._abort_if_unique_id_configured()
                 return await self.async_step_custody()
 
+        # Utiliser un schéma plus simple pour éviter les problèmes de validation
         schema = vol.Schema(
             {
-                vol.Required(CONF_CHILD_NAME): cv.string,
-                vol.Optional(CONF_ICON, default="mdi:account-child"): selector.IconSelector(),
-                vol.Optional(CONF_PHOTO): cv.string,
+                vol.Required(CONF_CHILD_NAME): str,
+                vol.Optional(CONF_ICON, default="mdi:account-child"): str,
+                vol.Optional(CONF_PHOTO): str,
             }
         )
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
