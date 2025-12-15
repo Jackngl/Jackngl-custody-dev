@@ -48,5 +48,52 @@
     "invalid_local_photo": "Utilisez une URL, une source média ou placez l'image dans /config/www pour qu'elle soit accessible via /local/...",
     "invalid_child_name": "Saisissez au moins une lettre ou un chiffre (les accents sont supprimés automatiquement).",
     "invalid_icon": "Choisissez une icône mdi:*."
+  },
+  "options": {
+    "step": {
+      "vacations": {
+        "data": {
+          "zone": {
+            "A": "Zone A — Besançon, Bordeaux, Clermont-Ferrand, Dijon, Grenoble, Limoges, Lyon, Poitiers",
+            "B": "Zone B — Aix-Marseille, Amiens, Lille, Nancy-Metz, Nantes, Nice, Normandie, Orléans-Tours, Reims, Rennes, Strasbourg",
+            "C": "Zone C — Créteil, Montpellier, Paris, Toulouse, Versailles",
+            "Corse": "Corse",
+            "DOM-TOM": "DOM-TOM"
+          }
+        }
+      }
+    }
+  },
+  "selector": {
+    "custody_type": {
+      "alternate_week": "Semaines alternées (1/1)",
+      "alternate_weekend": "Week-end sur 2",
+      "even_weekends": "Week-ends semaines paires",
+      "odd_weekends": "Week-ends semaines impaires",
+      "two_two_three": "2-2-3",
+      "two_two_five_five": "2-2-5-5",
+      "custom": "Personnalisé"
+    },
+    "vacation_rule": {
+      "first_week": "1ère semaine",
+      "second_week": "2ème semaine",
+      "first_half": "1ère moitié",
+      "second_half": "2ème moitié",
+      "even_weeks": "Semaines paires",
+      "odd_weeks": "Semaines impaires",
+      "july": "Juillet",
+      "august": "Août",
+      "custom": "Personnalisé"
+    },
+    "summer_rule": {
+      "july_first_half": "Juillet - 1ère moitié",
+      "july_second_half": "Juillet - 2ème moitié",
+      "july_even_weeks": "Juillet - semaines paires",
+      "july_odd_weeks": "Juillet - semaines impaires",
+      "august_first_half": "Août - 1ère moitié",
+      "august_second_half": "Août - 2ème moitié",
+      "august_even_weeks": "Août - semaines paires",
+      "august_odd_weeks": "Août - semaines impaires"
+    }
   }
 }

@@ -186,10 +186,32 @@ class CustodyScheduleManager:
         type_def = CUSTODY_TYPES.get(custody_type) or CUSTODY_TYPES["alternate_week"]
         horizon = now + timedelta(days=90)
 
+        # Cas particulier : week-ends basés sur la parité ISO des semaines
+        if custody_type in ("even_weekends", "odd_weekends"):
+            windows: list[CustodyWindow] = []
+            pointer = self._reference_start(now, custody_type)
+            while pointer < horizon:
+                iso_week = pointer.isocalendar().week
+                is_even = iso_week % 2 == 0
+                if (custody_type == "even_weekends" and is_even) or (
+                    custody_type == "odd_weekends" and not is_even
+                ):
+                    saturday = pointer + timedelta(days=5)
+                    sunday = pointer + timedelta(days=7)
+                    windows.append(
+                        CustodyWindow(
+                            start=self._apply_time(saturday, self._arrival_time),
+                            end=self._apply_time(sunday, self._departure_time),
+                            label="Custody period",
+                        )
+                    )
+                pointer += timedelta(days=7)
+            return windows
+
         cycle_days = type_def["cycle_days"]
         pattern = type_def["pattern"]
         windows: list[CustodyWindow] = []
-        reference_start = self._reference_start(now)
+        reference_start = self._reference_start(now, custody_type)
         pointer = reference_start
 
         while pointer < horizon:
@@ -310,6 +332,12 @@ class CustodyScheduleManager:
                     source="summer",
                 )
             )
+        elif rule in ("july_even_weeks", "july_odd_weeks"):
+            windows.extend(
+                self._summer_week_parity_windows(
+                    start=start, end=end, target_parity=0 if rule == "july_even_weeks" else 1, month=7
+                )
+            )
         elif rule == "august_first_half":
             window_end = datetime(start.year, 8, 15, tzinfo=start.tzinfo)
             windows.append(
@@ -328,6 +356,20 @@ class CustodyScheduleManager:
                     end=min(end, datetime(start.year, 8, 31, tzinfo=start.tzinfo)),
                     label="Vacances août - 2ème moitié",
                     source="summer",
+                )
+            )
+        elif rule == "july_even_weeks":
+            windows.extend(self._summer_week_parity_windows(start, end, target_parity=0, month=7))
+        elif rule == "july_odd_weeks":
+            windows.extend(self._summer_week_parity_windows(start, end, target_parity=1, month=7))
+        elif rule == "august_even_weeks":
+            windows.extend(self._summer_week_parity_windows(start, end, target_parity=0, month=8))
+        elif rule == "august_odd_weeks":
+            windows.extend(self._summer_week_parity_windows(start, end, target_parity=1, month=8))
+        elif rule in ("august_even_weeks", "august_odd_weeks"):
+            windows.extend(
+                self._summer_week_parity_windows(
+                    start=start, end=end, target_parity=0 if rule == "august_even_weeks" else 1, month=8
                 )
             )
         else:
@@ -356,7 +398,7 @@ class CustodyScheduleManager:
             )
         return windows
 
-    def _reference_start(self, now: datetime) -> datetime:
+    def _reference_start(self, now: datetime, custody_type: str) -> datetime:
         """Return the datetime used as anchor for the cycle."""
         reference_year = now.year
         desired = self._config.get(CONF_REFERENCE_YEAR, "even")
@@ -365,10 +407,48 @@ class CustodyScheduleManager:
         elif desired == "odd" and reference_year % 2 == 0:
             reference_year -= 1
 
-        base = datetime(reference_year, 1, 1, tzinfo=self._tz)
+        if custody_type in ("even_weekends", "odd_weekends"):
+            target_parity = 0 if custody_type == "even_weekends" else 1
+            base = self._first_monday_with_week_parity(reference_year, target_parity)
+        else:
+            base = datetime(reference_year, 1, 1, tzinfo=self._tz)
+
         start_day = WEEKDAY_LOOKUP.get(self._config.get(CONF_START_DAY, "monday").lower(), 0)
         delta = (start_day - base.weekday()) % 7
         return base + timedelta(days=delta)
+
+    def _first_monday_with_week_parity(self, year: int, parity: int) -> datetime:
+        """Return the first Monday of the ISO week with the requested parity (0 even / 1 odd)."""
+        candidate = datetime(year, 1, 1, tzinfo=self._tz)
+        # Go to next Monday
+        candidate += timedelta(days=(7 - candidate.weekday()) % 7)
+        while candidate.isocalendar().week % 2 != parity:
+            candidate += timedelta(days=7)
+        return candidate
+
+    def _summer_week_parity_windows(
+        self, start: datetime, end: datetime, target_parity: int, month: int
+    ) -> list[CustodyWindow]:
+        """Slice summer into week chunks based on even/odd parity."""
+        windows: list[CustodyWindow] = []
+        cursor = start
+        while cursor < end:
+            if cursor.month != month:
+                cursor += timedelta(days=1)
+                continue
+            week_start = cursor - timedelta(days=cursor.weekday())
+            week_end = min(end, week_start + timedelta(days=7))
+            if week_start.isocalendar().week % 2 == target_parity:
+                windows.append(
+                    CustodyWindow(
+                        start=week_start,
+                        end=week_end,
+                        label=f"Semaine {'paire' if target_parity == 0 else 'impaire'} {week_start.isocalendar().week}",
+                        source="summer",
+                    )
+                )
+            cursor = week_end
+        return windows
 
     def _apply_time(self, dt_value: datetime, target: time) -> datetime:
         """Attach the configured time to a datetime."""

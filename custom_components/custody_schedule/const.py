@@ -42,7 +42,17 @@ CONF_EXCEPTIONS = "exceptions"
 CONF_CUSTOM_RULES = "custom_rules"
 
 REFERENCE_YEARS = ["even", "odd"]
+
+# Zones étendues avec libellés pour l'UI
 FRENCH_ZONES = ["A", "B", "C", "Corse", "DOM-TOM"]
+FRENCH_ZONES_WITH_CITIES: dict[str, str] = {
+    "A": "Zone A — Besançon, Bordeaux, Clermont-Ferrand, Dijon, Grenoble, Limoges, Lyon, Poitiers",
+    "B": "Zone B — Aix-Marseille, Amiens, Lille, Nancy-Metz, Nantes, Nice, Normandie, Orléans-Tours, Reims, Rennes, Strasbourg",
+    "C": "Zone C — Créteil, Montpellier, Paris, Toulouse, Versailles",
+    "Corse": "Corse",
+    "DOM-TOM": "DOM-TOM",
+}
+
 VACATION_RULES = [
     "first_week",
     "second_week",
@@ -57,8 +67,12 @@ VACATION_RULES = [
 SUMMER_RULES = [
     "july_first_half",
     "july_second_half",
+    "july_even_weeks",
+    "july_odd_weeks",
     "august_first_half",
     "august_second_half",
+    "august_even_weeks",
+    "august_odd_weeks",
 ]
 
 CUSTODY_TYPES = {
@@ -77,6 +91,16 @@ CUSTODY_TYPES = {
             {"days": 12, "state": "off"},
             {"days": 2, "state": "on"},
         ],
+    },
+    "even_weekends": {
+        "label": "Week-ends semaines paires",
+        "cycle_days": 7,
+        "pattern": [],
+    },
+    "odd_weekends": {
+        "label": "Week-ends semaines impaires",
+        "cycle_days": 7,
+        "pattern": [],
     },
     "two_two_three": {
         "label": "2-2-3",
