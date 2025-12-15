@@ -44,30 +44,28 @@ ALLOWED_PHOTO_PREFIXES = ("http://", "https://", "media-source://", "data:")
 ALLOWED_PHOTO_PREFIXES_CI = tuple(prefix.lower() for prefix in ALLOWED_PHOTO_PREFIXES)
 
 
-def _validate_time(value: str) -> str:
-    """Ensure HH:MM format."""
-    if isinstance(value, (int, float)):
-        raise vol.Invalid("Expected HH:MM string")
-    parts = str(value).split(":")
-    if len(parts) != 2:
-        raise vol.Invalid("Use HH:MM format")
-    hour, minute = parts
-    try:
-        hour_i = int(hour)
-        minute_i = int(minute)
-    except ValueError as err:
-        raise vol.Invalid("Invalid time digits") from err
-    if not 0 <= hour_i <= 23 or not 0 <= minute_i <= 59:
-        raise vol.Invalid("Time must be within 00:00-23:59")
-    return f"{hour_i:02d}:{minute_i:02d}"
-
-
 def _format_child_name(value: str) -> str:
     """Normalize child name to ASCII words recognized by Home Assistant."""
     normalized = slugify(value, separator=" ").strip()
     if not normalized:
         return ""
     return " ".join(part.capitalize() for part in normalized.split())
+
+
+def _time_to_str(value: Any, default: str) -> str:
+    """Convert TimeSelector output to HH:MM string."""
+    if value is None:
+        return default
+    if hasattr(value, "strftime"):
+        return value.strftime("%H:%M")
+    text = str(value).strip()
+    parts = text.split(":")
+    if len(parts) >= 2:
+        try:
+            return f"{int(parts[0]):02d}:{int(parts[1]):02d}"
+        except (TypeError, ValueError):
+            return default
+    return default
 
 
 class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -135,7 +133,10 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_custody(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Select custody type and schedules (step 2)."""
         if user_input:
-            self._data.update(user_input)
+            cleaned = dict(user_input)
+            cleaned[CONF_ARRIVAL_TIME] = _time_to_str(user_input.get(CONF_ARRIVAL_TIME), "08:00")
+            cleaned[CONF_DEPARTURE_TIME] = _time_to_str(user_input.get(CONF_DEPARTURE_TIME), "19:00")
+            self._data.update(cleaned)
             return await self.async_step_vacations()
 
         schema = vol.Schema(
@@ -145,8 +146,8 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_START_DAY, default="monday"): vol.In(
                     ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
                 ),
-                vol.Required(CONF_ARRIVAL_TIME, default="08:00"): vol.All(cv.string, _validate_time),
-                vol.Required(CONF_DEPARTURE_TIME, default="19:00"): vol.All(cv.string, _validate_time),
+                vol.Required(CONF_ARRIVAL_TIME, default="08:00"): selector.TimeSelector(),
+                vol.Required(CONF_DEPARTURE_TIME, default="19:00"): selector.TimeSelector(),
                 vol.Optional(CONF_LOCATION): cv.string,
             }
         )
