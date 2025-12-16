@@ -84,6 +84,117 @@ def _zone_selector() -> selector.SelectSelector:
     )
 
 
+def _custody_type_selector() -> selector.SelectSelector:
+    """Create a custody type selector with French labels."""
+    translations = {
+        "alternate_week": "Semaines alternées (1/1)",
+        "alternate_weekend": "Week-end sur 2",
+        "even_weekends": "Week-ends semaines paires",
+        "odd_weekends": "Week-ends semaines impaires",
+        "two_two_three": "2-2-3",
+        "two_two_five_five": "2-2-5-5",
+        "custom": "Personnalisé",
+    }
+    options_list = [
+        {"value": key, "label": translations.get(key, key)} for key in sorted(CUSTODY_TYPES.keys())
+    ]
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=options_list,
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
+
+
+def _reference_year_selector() -> selector.SelectSelector:
+    """Create a reference year selector with French labels."""
+    translations = {
+        "even": "Paire",
+        "odd": "Impaire",
+    }
+    options_list = [
+        {"value": year, "label": translations.get(year, year)} for year in REFERENCE_YEARS
+    ]
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=options_list,
+            mode=selector.SelectSelectorMode.LIST,
+        )
+    )
+
+
+def _start_day_selector() -> selector.SelectSelector:
+    """Create a start day selector with French labels."""
+    translations = {
+        "monday": "Lundi",
+        "tuesday": "Mardi",
+        "wednesday": "Mercredi",
+        "thursday": "Jeudi",
+        "friday": "Vendredi",
+        "saturday": "Samedi",
+        "sunday": "Dimanche",
+    }
+    days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    options_list = [
+        {"value": day, "label": translations.get(day, day)} for day in days
+    ]
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=options_list,
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
+
+
+def _vacation_rule_selector() -> selector.SelectSelector:
+    """Create a vacation rule selector with French labels."""
+    translations = {
+        "first_week": "1ère semaine",
+        "second_week": "2ème semaine",
+        "first_half": "1ère moitié",
+        "second_half": "2ème moitié",
+        "even_weeks": "Semaines paires",
+        "odd_weeks": "Semaines impaires",
+        "july": "Juillet",
+        "august": "Août",
+        "custom": "Personnalisé",
+    }
+    options_list = [{"value": "", "label": "Aucune"}]
+    options_list.extend(
+        [{"value": rule, "label": translations.get(rule, rule)} for rule in VACATION_RULES]
+    )
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=options_list,
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
+
+
+def _summer_rule_selector() -> selector.SelectSelector:
+    """Create a summer rule selector with French labels."""
+    translations = {
+        "july_first_half": "Juillet - 1ère moitié",
+        "july_second_half": "Juillet - 2ème moitié",
+        "july_even_weeks": "Juillet - semaines paires",
+        "july_odd_weeks": "Juillet - semaines impaires",
+        "august_first_half": "Août - 1ère moitié",
+        "august_second_half": "Août - 2ème moitié",
+        "august_even_weeks": "Août - semaines paires",
+        "august_odd_weeks": "Août - semaines impaires",
+    }
+    options_list = [{"value": "", "label": "Aucune"}]
+    options_list.extend(
+        [{"value": rule, "label": translations.get(rule, rule)} for rule in SUMMER_RULES]
+    )
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=options_list,
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
+
+
 def _time_to_str(value: Any, default: str) -> str:
     """Convert TimeSelector output to HH:MM string."""
     if value is None:
@@ -173,27 +284,9 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         schema = vol.Schema(
             {
-                vol.Required(CONF_CUSTODY_TYPE, default="alternate_week"): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=sorted(CUSTODY_TYPES.keys()),
-                        translation_key="custody_type",
-                        mode=selector.SelectSelectorMode.DROPDOWN,
-                    )
-                ),
-                vol.Required(CONF_REFERENCE_YEAR, default="even"): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=REFERENCE_YEARS,
-                        translation_key="reference_year",
-                        mode=selector.SelectSelectorMode.LIST,
-                    )
-                ),
-                vol.Required(CONF_START_DAY, default="monday"): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"],
-                        translation_key="start_day",
-                        mode=selector.SelectSelectorMode.DROPDOWN,
-                    )
-                ),
+                vol.Required(CONF_CUSTODY_TYPE, default="alternate_week"): _custody_type_selector(),
+                vol.Required(CONF_REFERENCE_YEAR, default="even"): _reference_year_selector(),
+                vol.Required(CONF_START_DAY, default="monday"): _start_day_selector(),
                 vol.Required(CONF_ARRIVAL_TIME, default="08:00"): selector.TimeSelector(),
                 vol.Required(CONF_DEPARTURE_TIME, default="19:00"): selector.TimeSelector(),
                 vol.Optional(CONF_LOCATION): cv.string,
@@ -204,26 +297,20 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_vacations(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Configure school zones and vacation rules (step 3)."""
         if user_input:
-            self._data.update(user_input)
+            cleaned = dict(user_input)
+            # Convert empty strings to None for optional fields
+            if cleaned.get(CONF_VACATION_RULE) == "":
+                cleaned[CONF_VACATION_RULE] = None
+            if cleaned.get(CONF_SUMMER_RULE) == "":
+                cleaned[CONF_SUMMER_RULE] = None
+            self._data.update(cleaned)
             return await self.async_step_advanced()
 
         schema = vol.Schema(
             {
                 vol.Required(CONF_ZONE, default="A"): _zone_selector(),
-                vol.Optional(CONF_VACATION_RULE): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=[None] + VACATION_RULES,
-                        translation_key="vacation_rule",
-                        mode=selector.SelectSelectorMode.DROPDOWN,
-                    )
-                ),
-                vol.Optional(CONF_SUMMER_RULE): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=[None] + SUMMER_RULES,
-                        translation_key="summer_rule",
-                        mode=selector.SelectSelectorMode.DROPDOWN,
-                    )
-                ),
+                vol.Optional(CONF_VACATION_RULE): _vacation_rule_selector(),
+                vol.Optional(CONF_SUMMER_RULE): _summer_rule_selector(),
             }
         )
         return self.async_show_form(step_id="vacations", data_schema=schema)
@@ -324,27 +411,21 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
     async def async_step_vacations(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Modify school zone and vacation rules."""
         if user_input:
-            self._data.update(user_input)
+            cleaned = dict(user_input)
+            # Convert empty strings to None for optional fields
+            if cleaned.get(CONF_VACATION_RULE) == "":
+                cleaned[CONF_VACATION_RULE] = None
+            if cleaned.get(CONF_SUMMER_RULE) == "":
+                cleaned[CONF_SUMMER_RULE] = None
+            self._data.update(cleaned)
             return self.async_create_entry(title="", data=self._data)
 
         data = {**self._entry.data, **(self._entry.options or {})}
         schema = vol.Schema(
             {
                 vol.Required(CONF_ZONE, default=data.get(CONF_ZONE, "A")): _zone_selector(),
-                vol.Optional(CONF_VACATION_RULE, default=data.get(CONF_VACATION_RULE)): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=[None] + VACATION_RULES,
-                        translation_key="vacation_rule",
-                        mode=selector.SelectSelectorMode.DROPDOWN,
-                    )
-                ),
-                vol.Optional(CONF_SUMMER_RULE, default=data.get(CONF_SUMMER_RULE)): selector.SelectSelector(
-                    selector.SelectSelectorConfig(
-                        options=[None] + SUMMER_RULES,
-                        translation_key="summer_rule",
-                        mode=selector.SelectSelectorMode.DROPDOWN,
-                    )
-                ),
+                vol.Optional(CONF_VACATION_RULE, default=data.get(CONF_VACATION_RULE)): _vacation_rule_selector(),
+                vol.Optional(CONF_SUMMER_RULE, default=data.get(CONF_SUMMER_RULE)): _summer_rule_selector(),
             }
         )
         return self.async_show_form(step_id="vacations", data_schema=schema)
