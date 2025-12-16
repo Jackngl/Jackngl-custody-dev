@@ -1,0 +1,13 @@
+{
+  "custody_schedule": {
+    "domain": "custody_schedule",
+    "name": "Planning de garde",
+    "integrations": [
+      {
+        "domain": "custody_schedule",
+        "name": "Planning de garde"
+      }
+    ]
+  }
+}
+
