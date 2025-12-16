@@ -47,13 +47,13 @@ jobs:
           fi
           cat custom_components/custody_schedule/manifest.json
           echo ""
-          VERSION=$(python - <<'PY'
-import json, pathlib
-manifest = pathlib.Path("custom_components/custody_schedule/manifest.json")
-data = json.loads(manifest.read_text(encoding="utf-8"))
-print(data.get("version", "").strip())
-PY
-)
+          VERSION=$(python3 -c "
+import json
+import pathlib
+manifest = pathlib.Path('custom_components/custody_schedule/manifest.json')
+data = json.loads(manifest.read_text(encoding='utf-8'))
+print(data.get('version', '').strip())
+")
           echo "Extracted version: '$VERSION'"
           if [ -z "$VERSION" ]; then
             echo "ERROR: Version not found in manifest" >&2
@@ -256,7 +256,7 @@ PY
             echo "✗ Workflow failed"
             echo "Failed steps:"
             echo "- Check tag: ${{ steps.check_tag.outcome }}"
-            echo "- Create tag: ${{ steps.create_and_push_tag.outcome 'N/A' }}"
+            echo "- Create tag: ${{ steps.create_and_push_tag.outcome || 'N/A' }}"
             echo "- Check release: ${{ steps.check_release.outcome }}"
             echo "- Create release: ${{ steps.create_release.outcome }}"
             echo "- Verify release: ${{ steps.verify_release.outcome || "N/A" }}"
