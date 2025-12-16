@@ -22,6 +22,11 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     """Set up the calendar entity."""
+    if DOMAIN not in hass.data or entry.entry_id not in hass.data[DOMAIN]:
+        from .const import LOGGER
+        LOGGER.error("Custody schedule entry %s not found in hass.data", entry.entry_id)
+        return
+    
     coordinator: CustodyScheduleCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     child_name = entry.data.get(CONF_CHILD_NAME_DISPLAY, entry.data.get(CONF_CHILD_NAME))
     async_add_entities([CustodyCalendarEntity(coordinator, entry, child_name)])
