@@ -157,6 +157,8 @@ def _vacation_rule_selector() -> selector.SelectSelector:
         "second_half": "2ème moitié",
         "even_weeks": "Semaines paires",
         "odd_weeks": "Semaines impaires",
+        "even_weekends": "Week-ends semaines paires",
+        "odd_weekends": "Week-ends semaines impaires",
         "july": "Juillet",
         "august": "Août",
         "first_week_even_year": "1ère semaine - années paires",

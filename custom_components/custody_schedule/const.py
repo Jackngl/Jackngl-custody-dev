@@ -66,6 +66,8 @@ VACATION_RULES = [
     "second_half",
     "even_weeks",
     "odd_weeks",
+    "even_weekends",
+    "odd_weekends",
     "july",
     "august",
     "first_week_even_year",

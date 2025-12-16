@@ -279,6 +279,34 @@ class CustodyScheduleManager:
                 if int(start.strftime("%U")) % 2 == 0:
                     window_start = start + timedelta(days=7)
                 window_end = min(end, window_start + timedelta(days=7))
+            elif rule == "even_weekends":
+                # Week-ends des semaines paires (samedi-dimanche)
+                # Trouver le samedi de la semaine de début
+                days_until_saturday = (5 - start.weekday()) % 7
+                if days_until_saturday == 0 and start.weekday() != 5:
+                    days_until_saturday = 7
+                saturday = start + timedelta(days=days_until_saturday)
+                week_num = int(saturday.strftime("%U"))
+                # Si la semaine du samedi est impaire, passer à la semaine suivante
+                if week_num % 2 != 0:
+                    saturday += timedelta(days=7)
+                sunday = saturday + timedelta(days=1)
+                window_start = self._apply_time(saturday, self._arrival_time)
+                window_end = min(end, self._apply_time(sunday, self._departure_time))
+            elif rule == "odd_weekends":
+                # Week-ends des semaines impaires (samedi-dimanche)
+                # Trouver le samedi de la semaine de début
+                days_until_saturday = (5 - start.weekday()) % 7
+                if days_until_saturday == 0 and start.weekday() != 5:
+                    days_until_saturday = 7
+                saturday = start + timedelta(days=days_until_saturday)
+                week_num = int(saturday.strftime("%U"))
+                # Si la semaine du samedi est paire, passer à la semaine suivante
+                if week_num % 2 == 0:
+                    saturday += timedelta(days=7)
+                sunday = saturday + timedelta(days=1)
+                window_start = self._apply_time(saturday, self._arrival_time)
+                window_end = min(end, self._apply_time(sunday, self._departure_time))
             elif rule == "july":
                 if start.month != 7 and end.month != 7:
                     continue

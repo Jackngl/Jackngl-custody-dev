@@ -55,6 +55,15 @@
         "title": "Options du planning de garde",
         "description": "Choisissez ce que vous souhaitez modifier."
       },
+      "custody": {
+        "title": "Type de garde",
+        "description": "Modifier le type de garde, l'année de référence et le jour de départ du cycle.",
+        "data": {
+          "custody_type": "Type de garde",
+          "reference_year": "Année de référence (paire/impaire)",
+          "start_day": "Jour de départ du cycle"
+        }
+      },
       "schedule": {
         "title": "Horaires et lieu",
         "description": "Modifier les horaires d'arrivée/départ et le lieu d'échange.",
@@ -102,6 +111,8 @@
       "second_half": "2ème moitié",
       "even_weeks": "Semaines paires",
       "odd_weeks": "Semaines impaires",
+      "even_weekends": "Week-ends semaines paires",
+      "odd_weekends": "Week-ends semaines impaires",
       "july": "Juillet",
       "august": "Août",
       "first_week_even_year": "1ère semaine - années paires",
