@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Update the integration version inside manifest.json."""
+"""Update the integration version inside manifest.json and README.md badge."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MANIFEST_PATH = PROJECT_ROOT / "custom_components" / "custody_schedule" / "manifest.json"
+README_PATH = PROJECT_ROOT / "README.md"
 
 
 def increment_version(version: str) -> str:
@@ -42,7 +43,7 @@ def get_current_version() -> str:
 
 
 def update_version(version: str) -> None:
-    """Replace the manifest version field with the provided value."""
+    """Replace the manifest version field with the provided value and update README badge."""
     if not MANIFEST_PATH.exists():
         print(f"manifest not found at {MANIFEST_PATH}")
         sys.exit(1)
@@ -62,7 +63,26 @@ def update_version(version: str) -> None:
         print(f"Failed to write manifest: {err}")
         sys.exit(1)
 
-    print(f"Version updated from {old_version} to {version}")
+    print(f"Version updated in manifest.json: {old_version} -> {version}")
+
+    # Update README.md badge
+    if README_PATH.exists():
+        try:
+            readme_content = README_PATH.read_text(encoding="utf-8")
+            # Pattern to match the version badge: ![Version](https://img.shields.io/badge/version-X.Y.Z-blue.svg)
+            pattern = r'!\[Version\]\(https://img\.shields\.io/badge/version-[\d.]+-blue\.svg\)'
+            replacement = f'![Version](https://img.shields.io/badge/version-{version}-blue.svg)'
+            new_content = re.sub(pattern, replacement, readme_content)
+            
+            if new_content != readme_content:
+                README_PATH.write_text(new_content, encoding="utf-8")
+                print(f"Version badge updated in README.md: {old_version} -> {version}")
+            else:
+                print("Warning: Version badge pattern not found in README.md")
+        except OSError as err:
+            print(f"Warning: Failed to update README.md: {err}")
+    else:
+        print("Warning: README.md not found, skipping badge update")
 
 
 if __name__ == "__main__":

@@ -47,10 +47,17 @@ jobs:
           echo "Current manifest:"
           cat custom_components/custody_schedule/manifest.json
           echo ""
+          echo "Current README badge (first 3 lines):"
+          head -n 3 README.md || echo "README.md not found"
+          echo ""
           echo "Running auto-increment script..."
           python3 scripts/update_version.py
+          echo ""
           echo "Updated manifest:"
           cat custom_components/custody_schedule/manifest.json
+          echo ""
+          echo "Updated README badge (first 3 lines):"
+          head -n 3 README.md || echo "README.md not found"
           echo "::endgroup::"
 
       - name: Read version from manifest
@@ -77,7 +84,7 @@ jobs:
       - name: Commit and push version increment
         run: |
           echo "::group::Committing and pushing version increment"
-          git add custom_components/custody_schedule/manifest.json
+          git add custom_components/custody_schedule/manifest.json README.md
           if git diff --staged --quiet; then
             echo "No version change to commit (version already incremented)"
           else
@@ -90,7 +97,7 @@ jobs:
             git push origin HEAD:main || {
               echo "WARNING: Failed to push version increment (may already be pushed)"
             }
-            echo "✓ Version increment committed and pushed"
+            echo "✓ Version increment committed and pushed (manifest.json + README.md badge)"
           fi
           echo "::endgroup::"
 
