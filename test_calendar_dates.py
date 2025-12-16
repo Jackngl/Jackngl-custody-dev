@@ -105,16 +105,23 @@ class MockScheduleManager:
             print(f"   📊 Cycle calculation:")
             print(f"      First Friday of {ref_year}: {first_target_day}")
             print(f"      Weeks since anchor: {weeks_since_anchor}")
-            print(f"      Cycle week: {cycle_week} (0=first week/off, 1=second week/on)")
+            print(f"      Cycle week: {cycle_week} (0 or 1)")
+            print(f"      Reference year: {ref_year} ({'even' if ref_year % 2 == 0 else 'odd'})")
             
-            # If we're in the first week of the pair (week 0), we need to go to the second week (week 1, Friday)
-            # The "on" period is the Friday of the second week in the 2-week cycle
-            if cycle_week == 0:
-                # We're in the first week (off period), go to next Friday (second week, on period)
-                print(f"      In first week (off), moving to next Friday (on)")
+            # The "on" period depends on the reference year parity:
+            # - If reference year is even: cycle_week == 0 means "on"
+            # - If reference year is odd: cycle_week == 1 means "on"
+            is_even_year = ref_year % 2 == 0
+            is_on_period = (cycle_week == 0) if is_even_year else (cycle_week == 1)
+            
+            print(f"      Is on period: {is_on_period} (even_year={is_even_year}, cycle_week={cycle_week})")
+            
+            if not is_on_period:
+                # We're in the "off" period, go to next Friday (which will be "on")
+                print(f"      In 'off' period, moving to next Friday (on)")
                 candidate += timedelta(days=7)  # Next Friday
             else:
-                print(f"      Already at second week (on) Friday")
+                print(f"      Already at 'on' period")
             
             print(f"   ✅ Final reference start: {candidate} ({candidate.strftime('%A')})")
             return candidate

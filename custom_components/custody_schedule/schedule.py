@@ -584,16 +584,21 @@ class CustodyScheduleManager:
             # Determine which week in the 2-week cycle (0 or 1)
             cycle_week = weeks_since_ref % 2
             
-            LOGGER.debug("alternate_weekend: first_friday_ref=%s, weeks_since_ref=%d, cycle_week=%d", 
-                        first_friday_ref, weeks_since_ref, cycle_week)
+            LOGGER.debug("alternate_weekend: first_friday_ref=%s, weeks_since_ref=%d, cycle_week=%d, reference_year=%d", 
+                        first_friday_ref, weeks_since_ref, cycle_week, reference_year)
             
-            # The "on" period is when cycle_week == 1 (second week of the 2-week cycle)
-            # If we're at cycle_week == 0, we need to go to the next Friday (cycle_week == 1)
-            if cycle_week == 0:
-                # We're in the first week (off period), go to next Friday (second week, on period)
-                LOGGER.debug("alternate_weekend: in first week (off), moving to next Friday (on)")
+            # The "on" period depends on the reference year parity:
+            # - If reference year is even: cycle_week == 0 means "on"
+            # - If reference year is odd: cycle_week == 1 means "on"
+            is_even_year = reference_year % 2 == 0
+            is_on_period = (cycle_week == 0) if is_even_year else (cycle_week == 1)
+            
+            if not is_on_period:
+                # We're in the "off" period, go to next Friday (which will be "on")
+                LOGGER.debug("alternate_weekend: in 'off' period, moving to next Friday (on)")
                 next_friday += timedelta(days=7)  # Next Friday
-            # If cycle_week == 1, we're already at the "on" Friday, use it as is
+            else:
+                LOGGER.debug("alternate_weekend: already at 'on' period")
             
             LOGGER.debug("alternate_weekend: final reference_start=%s", next_friday)
             return next_friday
