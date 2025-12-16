@@ -53,14 +53,14 @@ PY
         id: check_release
         if: steps.check_tag.outputs.exists == 'false'
         run: |
-          RELEASE_EXISTS=$(gh release view "v${{ steps.version.outputs.version }}" 2>&1 || echo "not found")
-          if echo "$RELEASE_EXISTS" | grep -q "not found"; then
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          else
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/tags/v${{ steps.version.outputs.version }}")
+          if [ "$RESPONSE" = "200" ]; then
             echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create GitHub Release
         if: steps.check_tag.outputs.exists == 'false' && steps.check_release.outputs.exists == 'false'
