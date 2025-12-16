@@ -257,9 +257,11 @@ jobs:
             echo "✗ Workflow failed"
             echo "Failed steps:"
             echo "- Check tag: ${{ steps.check_tag.outcome }}"
-            echo "- Create tag: ${{ steps.create_and_push_tag.outcome || 'N/A' }}"
+            CREATE_TAG_OUTCOME="${{ steps.create_and_push_tag.outcome }}"
+            echo "- Create tag: ${CREATE_TAG_OUTCOME:-N/A}"
             echo "- Check release: ${{ steps.check_release.outcome }}"
             echo "- Create release: ${{ steps.create_release.outcome }}"
-            echo "- Verify release: ${{ steps.verify_release.outcome || "N/A" }}"
+            VERIFY_RELEASE_OUTCOME="${{ steps.verify_release.outcome }}"
+            echo "- Verify release: ${VERIFY_RELEASE_OUTCOME:-N/A}"
           fi
           echo "::endgroup::"
