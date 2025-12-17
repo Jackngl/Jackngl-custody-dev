@@ -240,7 +240,6 @@ def generate_vacation_windows(now: datetime, vacations: list[dict], arrival_time
                 sunday_of_week = monday_of_week + timedelta(days=6)
                 
                 # La fenêtre de vacances couvre du vendredi (arrivée) au dimanche (départ)
-                # Mais pour le filtrage, on doit couvrir toute la semaine
                 # Trouver le vendredi de cette semaine
                 friday = monday_of_week + timedelta(days=4)  # Vendredi = lundi + 4 jours
                 sunday = min(sunday_of_week, window_end)
@@ -255,7 +254,7 @@ def generate_vacation_windows(now: datetime, vacations: list[dict], arrival_time
                             source="vacation"
                         )
                     )
-                    # Ajouter aussi une fenêtre couvrant toute la semaine pour le filtrage
+                    # Ajouter une fenêtre couvrant toute la semaine pour le filtrage
                     windows.append(
                         CustodyWindow(
                             start=monday_of_week,
@@ -264,20 +263,35 @@ def generate_vacation_windows(now: datetime, vacations: list[dict], arrival_time
                             source="vacation_filter"
                         )
                     )
+                
+                # IMPORTANT: Ajouter aussi une fenêtre de filtrage pour toute la période de vacances
+                # pour supprimer les weekends normaux pendant toute la durée des vacances
+                monday_start_week = start - timedelta(days=start.weekday())
+                sunday_end_week = end - timedelta(days=end.weekday()) + timedelta(days=6)
+                windows.append(
+                    CustodyWindow(
+                        start=monday_start_week,
+                        end=sunday_end_week + timedelta(days=1),
+                        label=f"{name} - Période complète (filtrage)",
+                        source="vacation_filter"
+                    )
+                )
             elif year % 2 == 0:  # Année paire -> 2ème semaine complète
+                # La 2ème semaine commence 7 jours après le début des vacances
                 window_start = start + timedelta(days=7)  # Début de la 2ème semaine
                 window_end = min(end, window_start + timedelta(days=7))
                 
                 # Créer une fenêtre pour toute la semaine (du lundi au dimanche)
+                # Trouver le lundi de la semaine de window_start
                 monday_of_week = window_start - timedelta(days=window_start.weekday())
                 sunday_of_week = monday_of_week + timedelta(days=6)
                 
                 # Trouver le vendredi de cette semaine
-                friday = monday_of_week + timedelta(days=4)
+                friday = monday_of_week + timedelta(days=4)  # Vendredi = lundi + 4 jours
                 sunday = min(sunday_of_week, window_end)
                 
-                # S'assurer que c'est dans la période
-                if friday >= window_start and sunday <= window_end:
+                # S'assurer que c'est dans la période et que friday < sunday
+                if friday >= window_start and sunday <= window_end and friday < sunday:
                     windows.append(
                         CustodyWindow(
                             start=apply_time(friday, arrival_time),
@@ -286,7 +300,7 @@ def generate_vacation_windows(now: datetime, vacations: list[dict], arrival_time
                             source="vacation"
                         )
                     )
-                    # Ajouter aussi une fenêtre couvrant toute la semaine pour le filtrage
+                    # Ajouter une fenêtre couvrant toute la semaine pour le filtrage
                     windows.append(
                         CustodyWindow(
                             start=monday_of_week,
@@ -295,6 +309,19 @@ def generate_vacation_windows(now: datetime, vacations: list[dict], arrival_time
                             source="vacation_filter"
                         )
                     )
+                
+                # IMPORTANT: Ajouter aussi une fenêtre de filtrage pour toute la période de vacances
+                # pour supprimer les weekends normaux pendant toute la durée des vacances
+                monday_start_week = start - timedelta(days=start.weekday())
+                sunday_end_week = end - timedelta(days=end.weekday()) + timedelta(days=6)
+                windows.append(
+                    CustodyWindow(
+                        start=monday_start_week,
+                        end=sunday_end_week + timedelta(days=1),
+                        label=f"{name} - Période complète (filtrage)",
+                        source="vacation_filter"
+                    )
+                )
     
     return windows
 

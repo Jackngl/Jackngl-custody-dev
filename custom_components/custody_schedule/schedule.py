@@ -198,10 +198,14 @@ class CustodyScheduleManager:
 
         # Filter out pattern windows that overlap with vacation periods
         # Vacation rules have priority and completely replace normal rules during vacations
+        # We need to create filter windows that cover entire vacation periods
         filtered_pattern_windows = self._filter_windows_by_vacations(pattern_windows, vacation_windows)
         
+        # Separate display windows from filter windows
+        vacation_display_windows = [w for w in vacation_windows if w.source != "vacation_filter"]
+        
         # Merge: vacation windows (highest priority), then custom, then filtered pattern
-        merged = vacation_windows + custom_windows + filtered_pattern_windows
+        merged = vacation_display_windows + custom_windows + filtered_pattern_windows
         return [window for window in merged if window.end > now - timedelta(days=1)]
     
     def _filter_windows_by_vacations(
@@ -452,6 +456,21 @@ class CustodyScheduleManager:
                     end=window_end,
                     label=f"{holiday.name} ({rule})",
                     source="vacation",
+                )
+            )
+            
+            # Add a filter window covering the entire vacation period
+            # This ensures normal pattern windows are removed during the entire vacation
+            # Find Monday of the week containing the vacation start
+            monday_start_week = start - timedelta(days=start.weekday())
+            # Find Sunday of the week containing the vacation end
+            sunday_end_week = end - timedelta(days=end.weekday()) + timedelta(days=6)
+            windows.append(
+                CustodyWindow(
+                    start=monday_start_week,
+                    end=sunday_end_week + timedelta(days=1),
+                    label=f"{holiday.name} - Période complète (filtrage)",
+                    source="vacation_filter",
                 )
             )
         return windows
