@@ -77,7 +77,14 @@ class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntit
 
     def _window_to_event(self, window: CustodyWindow) -> CalendarEvent:
         """Convert an internal window to a CalendarEvent."""
-        description = f"{window.label} • Source: {window.source}"
+        # Distinguish between weekend custody and vacation custody in description
+        if window.source == "vacation" or window.source == "summer":
+            description = f"Vacances scolaires • {window.label}"
+        elif window.source == "pattern":
+            description = f"Garde normale • {window.label}"
+        else:
+            description = f"{window.label} • Source: {window.source}"
+        
         location = self.coordinator.data.attributes.get(CONF_LOCATION) if self.coordinator.data else None
         return CalendarEvent(
             start=window.start,

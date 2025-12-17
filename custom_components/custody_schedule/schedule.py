@@ -282,7 +282,7 @@ class CustodyScheduleManager:
                         CustodyWindow(
                             start=self._apply_time(saturday, self._arrival_time),
                             end=self._apply_time(sunday, self._departure_time),
-                            label="Custody period",
+                            label="Garde - Week-end",
                         )
                     )
                 pointer += timedelta(days=7)
@@ -317,7 +317,7 @@ class CustodyScheduleManager:
                         CustodyWindow(
                             start=self._apply_time(segment_start, self._arrival_time),
                             end=self._apply_time(segment_end, self._departure_time),
-                            label="Custody period",
+                            label="Garde - Week-end",
                         )
                     )
                 offset += timedelta(days=segment["days"])
@@ -486,7 +486,7 @@ class CustodyScheduleManager:
                 CustodyWindow(
                     start=window_start,
                     end=window_end,
-                    label=f"{holiday.name} ({rule})",
+                    label=f"Vacances scolaires - {holiday.name} ({rule})",
                     source="vacation",
                 )
             )
@@ -524,7 +524,7 @@ class CustodyScheduleManager:
                 CustodyWindow(
                     start=start,
                     end=window_end,
-                    label="Vacances juillet - 1ère moitié",
+                    label="Vacances scolaires - Juillet (1ère moitié)",
                     source="summer",
                 )
             )
@@ -534,7 +534,7 @@ class CustodyScheduleManager:
                 CustodyWindow(
                     start=window_start,
                     end=datetime(start.year, 7, 31, tzinfo=start.tzinfo),
-                    label="Vacances juillet - 2ème moitié",
+                    label="Vacances scolaires - Juillet (2ème moitié)",
                     source="summer",
                 )
             )
@@ -550,7 +550,7 @@ class CustodyScheduleManager:
                 CustodyWindow(
                     start=datetime(start.year, 8, 1, tzinfo=start.tzinfo),
                     end=window_end,
-                    label="Vacances août - 1ère moitié",
+                    label="Vacances scolaires - Août (1ère moitié)",
                     source="summer",
                 )
             )
@@ -560,7 +560,7 @@ class CustodyScheduleManager:
                 CustodyWindow(
                     start=window_start,
                     end=min(end, datetime(start.year, 8, 31, tzinfo=start.tzinfo)),
-                    label="Vacances août - 2ème moitié",
+                    label="Vacances scolaires - Août (2ème moitié)",
                     source="summer",
                 )
             )
@@ -580,7 +580,7 @@ class CustodyScheduleManager:
                         CustodyWindow(
                             start=max(start, july_start),
                             end=min(end, july_end),
-                            label="Vacances juillet - années paires",
+                            label="Vacances scolaires - Juillet (années paires)",
                             source="summer",
                         )
                     )
@@ -594,7 +594,7 @@ class CustodyScheduleManager:
                         CustodyWindow(
                             start=max(start, july_start),
                             end=min(end, july_end),
-                            label="Vacances juillet - années impaires",
+                            label="Vacances scolaires - Juillet (années impaires)",
                             source="summer",
                         )
                     )
@@ -608,7 +608,7 @@ class CustodyScheduleManager:
                         CustodyWindow(
                             start=max(start, august_start),
                             end=min(end, august_end),
-                            label="Vacances août - années paires",
+                            label="Vacances scolaires - Août (années paires)",
                             source="summer",
                         )
                     )
@@ -622,12 +622,12 @@ class CustodyScheduleManager:
                         CustodyWindow(
                             start=max(start, august_start),
                             end=min(end, august_end),
-                            label="Vacances août - années impaires",
+                            label="Vacances scolaires - Août (années impaires)",
                             source="summer",
                         )
                     )
         else:
-            windows.append(CustodyWindow(start=start, end=end, label=holiday.name, source="summer"))
+            windows.append(CustodyWindow(start=start, end=end, label=f"Vacances scolaires - {holiday.name}", source="summer"))
 
         valid_windows = [window for window in windows if window.end > window.start]
         return valid_windows
@@ -752,7 +752,7 @@ class CustodyScheduleManager:
                     CustodyWindow(
                         start=week_start,
                         end=week_end,
-                        label=f"Semaine {'paire' if target_parity == 0 else 'impaire'} {week_start.isocalendar().week}",
+                        label=f"Vacances scolaires - Semaine {'paire' if target_parity == 0 else 'impaire'} {week_start.isocalendar().week}",
                         source="summer",
                     )
                 )
