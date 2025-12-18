@@ -57,11 +57,13 @@ Vacances scolaires > Jours fériés > Garde classique
 
 ## 🎯 Types de garde disponibles
 
-L'application supporte **6 types de garde** pour les weekends et semaines :
+L'application supporte **8 types de garde** pour les weekends et semaines :
 
 | Type | Code | Description | Cycle | Utilisation |
 |------|------|-------------|-------|-------------|
-| **Semaines alternées (1/1)** | `alternate_week` | Garde une semaine complète sur deux | 14 jours | Garde hebdomadaire alternée classique |
+| **Semaines alternées (1/1)** | `alternate_week` | Garde une semaine complète sur deux | 14 jours | Garde hebdomadaire alternée classique (basée sur date de référence) |
+| **Semaines alternées - semaines paires** | `alternate_week_even` | Garde toutes les semaines ISO paires | 7 jours | Basé sur la parité ISO des semaines |
+| **Semaines alternées - semaines impaires** | `alternate_week_odd` | Garde toutes les semaines ISO impaires | 7 jours | Complémentaire des semaines paires |
 | **Week-ends semaines paires** | `even_weekends` | Garde tous les weekends des semaines ISO paires | 7 jours | Basé sur la parité ISO des semaines |
 | **Week-ends semaines impaires** | `odd_weekends` | Garde tous les weekends des semaines ISO impaires | 7 jours | Complémentaire des weekends pairs |
 | **2-2-3** | `two_two_three` | Garde 2 jours, pause 2 jours, garde 3 jours | 7 jours | Rythme hebdomadaire régulier |
@@ -105,8 +107,8 @@ L'application supporte **6 types de garde** pour les weekends et semaines :
 - **Description** : Jour de la semaine qui marque le début du cycle de garde
 - **Valeurs** : `"monday"`, `"tuesday"`, `"wednesday"`, `"thursday"`, `"friday"`, `"saturday"`, `"sunday"`
 - **Utilisation** : 
-  - ✅ **Utilisé pour** : `alternate_week`
-  - ❌ **Non utilisé pour** : `even_weekends`, `odd_weekends` (basé sur la parité ISO)
+  - ✅ **Utilisé pour** : `alternate_week`, `two_two_three`, `two_two_five_five`, `custom`
+  - ❌ **Non utilisé pour** : `even_weekends`, `odd_weekends`, `alternate_week_even`, `alternate_week_odd` (basé sur la parité ISO)
 - **Défaut** : `"monday"` (ou `"friday"` pour les weekends)
 - **Note** : Pour les weekends pairs/impairs, ce champ est masqué car non applicable
 
@@ -194,6 +196,34 @@ departure_time: "19:00"
 - Semaine 1 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
 - Semaine 2 : ❌ Pas de garde
 - Semaine 3 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
+
+---
+
+### 4. Semaines alternées - semaines paires/impaires (`alternate_week_even` / `alternate_week_odd`)
+
+**Fonctionnement** :
+- Garde **toutes les semaines ISO paires** (`alternate_week_even`) ou **impaires** (`alternate_week_odd`)
+- Basé sur la **parité ISO des semaines** (comme `even_weekends`/`odd_weekends` pour les weekends)
+- Cycle : 7 jours (une semaine complète)
+- **Ne nécessite pas** le champ `start_day` (basé sur la parité ISO)
+
+**Configuration** :
+```yaml
+custody_type: "alternate_week_even"  # ou "alternate_week_odd"
+reference_year: "even"  # Utilisé pour déterminer l'année de référence
+arrival_time: "08:00"
+departure_time: "19:00"
+```
+
+**Exemple de cycle** (semaines paires) :
+- Semaine ISO 2 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
+- Semaine ISO 3 : ❌ Pas de garde
+- Semaine ISO 4 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
+- Semaine ISO 5 : ❌ Pas de garde
+
+**Différence avec `alternate_week`** :
+- `alternate_week` : Basé sur une date de référence et un cycle de 14 jours (1 semaine sur 2)
+- `alternate_week_even`/`alternate_week_odd` : Basé sur la parité ISO des semaines (toutes les semaines paires ou impaires)
 
 ---
 
@@ -298,7 +328,9 @@ custody_type: "custom"
 
 ## 🎉 Gestion des jours fériés
 
-L'application **étend automatiquement** les weekends de garde lorsqu'un jour férié tombe sur un vendredi ou un lundi.
+L'application **étend automatiquement** les weekends et semaines de garde lorsqu'un jour férié tombe sur un vendredi ou un lundi.
+
+> ⚠️ **Important** : Les extensions de jours fériés **ne s'appliquent PAS** si le weekend ou la semaine tombe pendant une **période de vacances scolaires**. Les vacances scolaires ont priorité absolue et utilisent leur propre logique.
 
 ### Règles d'extension
 
@@ -354,6 +386,8 @@ Les événements de garde affichent automatiquement les extensions :
 - `Garde - Week-ends semaines paires + Lundi férié`
 - `Garde - Week-ends semaines paires + Vendredi férié`
 - `Garde - Week-ends semaines paires + Pont`
+- `Garde - Semaines alternées - semaines paires + Lundi férié`
+- `Garde - Semaines alternées - semaines paires + Vendredi férié`
 
 ---
 
@@ -362,13 +396,15 @@ Les événements de garde affichent automatiquement les extensions :
 | Type | Cycle | Utilise start_day | Utilise reference_year | Jours fériés |
 |------|-------|-------------------|------------------------|--------------|
 | `alternate_week` | 14 jours | ✅ Oui | ✅ Oui | ❌ Non |
+| `alternate_week_even` | 7 jours | ❌ Non | ✅ Oui | ✅ Oui |
+| `alternate_week_odd` | 7 jours | ❌ Non | ✅ Oui | ✅ Oui |
 | `even_weekends` | 7 jours | ❌ Non | ✅ Oui | ✅ Oui |
 | `odd_weekends` | 7 jours | ❌ Non | ✅ Oui | ✅ Oui |
 | `two_two_three` | 7 jours | ✅ Oui | ✅ Oui | ❌ Non |
 | `two_two_five_five` | 14 jours | ✅ Oui | ✅ Oui | ❌ Non |
 | `custom` | Variable | ✅ Oui | ✅ Oui | ❌ Non |
 
-**Note** : Seuls les types de garde basés sur les weekends (`even_weekends`, `odd_weekends`) bénéficient de l'extension automatique avec les jours fériés.
+**Note** : Les types de garde basés sur les weekends (`even_weekends`, `odd_weekends`) et les semaines basées sur la parité ISO (`alternate_week_even`, `alternate_week_odd`) bénéficient de l'extension automatique avec les jours fériés, **uniquement hors vacances scolaires**.
 
 ---
 

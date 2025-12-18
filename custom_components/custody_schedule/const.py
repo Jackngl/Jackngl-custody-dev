@@ -103,6 +103,16 @@ CUSTODY_TYPES = {
             {"days": 7, "state": "off"},
         ],
     },
+    "alternate_week_even": {
+        "label": "Semaines alternées - semaines paires",
+        "cycle_days": 7,
+        "pattern": [],
+    },
+    "alternate_week_odd": {
+        "label": "Semaines alternées - semaines impaires",
+        "cycle_days": 7,
+        "pattern": [],
+    },
     "even_weekends": {
         "label": "Week-ends semaines paires",
         "cycle_days": 7,

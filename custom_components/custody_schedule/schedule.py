@@ -243,14 +243,15 @@ class CustodyScheduleManager:
         Priority: Vacation rules > Custom rules > Normal pattern rules
         Vacation periods completely replace normal pattern windows during their entire duration.
         """
-        # 1. Generate weekend/pattern windows based on custody_type
-        # This creates the normal weekend schedule (e.g., even weekends, alternate weekends)
-        pattern_windows = self._generate_pattern_windows(now)
-        
-        # 2. Generate vacation windows based on vacation_rule
+        # 1. Generate vacation windows first (needed to check overlaps for public holidays)
         # This creates custody windows during school holidays (e.g., first half, second half)
         # Also creates filter windows that cover the entire vacation period
         vacation_windows = await self._generate_vacation_windows(now)
+        
+        # 2. Generate weekend/pattern windows based on custody_type
+        # This creates the normal weekend schedule (e.g., even weekends, alternate weekends)
+        # Pass vacation_windows to check if weekends/weeks fall during vacations before applying public holidays
+        pattern_windows = self._generate_pattern_windows(now, vacation_windows)
         
         # 3. Load custom windows (manual overrides)
         custom_windows = self._load_custom_rules()
@@ -307,8 +308,34 @@ class CustodyScheduleManager:
         
         return filtered
 
-    def _generate_pattern_windows(self, now: datetime) -> list[CustodyWindow]:
-        """Create repeating windows from the selected custody type."""
+    def _is_in_vacation_period(self, check_date: datetime, vacation_windows: list[CustodyWindow]) -> bool:
+        """Check if a date falls within any vacation period.
+        
+        Args:
+            check_date: Date to check
+            vacation_windows: List of vacation windows (including filter windows)
+        
+        Returns:
+            True if the date is within a vacation period, False otherwise
+        """
+        if not vacation_windows:
+            return False
+        
+        for vac_window in vacation_windows:
+            if vac_window.start <= check_date <= vac_window.end:
+                return True
+        return False
+
+    def _generate_pattern_windows(self, now: datetime, vacation_windows: list[CustodyWindow] = None) -> list[CustodyWindow]:
+        """Create repeating windows from the selected custody type.
+        
+        Args:
+            now: Current datetime
+            vacation_windows: List of vacation windows to check for overlaps (public holidays not applied during vacations)
+        """
+        if vacation_windows is None:
+            vacation_windows = []
+        
         custody_type = self._config.get("custody_type", "alternate_week")
         type_def = CUSTODY_TYPES.get(custody_type) or CUSTODY_TYPES["alternate_week"]
         horizon = now + timedelta(days=90)
@@ -340,19 +367,92 @@ class CustodyScheduleManager:
                     window_end = sunday
                     label_suffix = ""
                     
-                    # Check for public holidays that extend the weekend
-                    friday_is_holiday = friday.date() in holidays
-                    monday_is_holiday = monday.date() in holidays
+                    # Check if weekend falls during vacation period
+                    # If yes, don't apply public holiday extensions (vacations dominate)
+                    weekend_in_vacation = (
+                        self._is_in_vacation_period(friday, vacation_windows) or
+                        self._is_in_vacation_period(sunday, vacation_windows) or
+                        self._is_in_vacation_period(monday, vacation_windows)
+                    )
                     
-                    if friday_is_holiday:
-                        # Vendredi férié: start Thursday instead
-                        window_start = thursday
-                        label_suffix = " + Vendredi férié"
+                    # Only apply public holidays if NOT during vacation period
+                    if not weekend_in_vacation:
+                        friday_is_holiday = friday.date() in holidays
+                        monday_is_holiday = monday.date() in holidays
+                        
+                        if friday_is_holiday:
+                            # Vendredi férié: start Thursday instead
+                            window_start = thursday
+                            label_suffix = " + Vendredi férié"
+                        
+                        if monday_is_holiday:
+                            # Lundi férié: extend to Monday
+                            window_end = monday
+                            label_suffix = " + Lundi férié" if not label_suffix else " + Pont"
                     
-                    if monday_is_holiday:
-                        # Lundi férié: extend to Monday
-                        window_end = monday
-                        label_suffix = " + Lundi férié" if not label_suffix else " + Pont"
+                    # Get label from custody type definition
+                    type_label = CUSTODY_TYPES.get(custody_type, {}).get("label", "Garde")
+                    windows.append(
+                        CustodyWindow(
+                            start=self._apply_time(window_start, self._arrival_time),
+                            end=self._apply_time(window_end, self._departure_time),
+                            label=f"Garde - {type_label}{label_suffix}",
+                            source="pattern",
+                        )
+                    )
+                pointer += timedelta(days=7)
+            return windows
+
+        # Cas particulier : semaines alternées basées sur la parité ISO des semaines
+        if custody_type in ("alternate_week_even", "alternate_week_odd"):
+            windows: list[CustodyWindow] = []
+            pointer = self._reference_start(now, custody_type)
+            
+            # Get French holidays for current and next year
+            holidays = get_french_holidays(now.year) | get_french_holidays(now.year + 1)
+            
+            while pointer < horizon:
+                iso_week = pointer.isocalendar().week
+                is_even = iso_week % 2 == 0
+                if (custody_type == "alternate_week_even" and is_even) or (
+                    custody_type == "alternate_week_odd" and not is_even
+                ):
+                    # Week: Monday to Sunday (7 days)
+                    monday = pointer
+                    sunday = pointer + timedelta(days=6)
+                    next_monday = pointer + timedelta(days=7)
+                    previous_friday = pointer - timedelta(days=3)
+                    
+                    # Default start/end
+                    window_start = monday
+                    window_end = sunday
+                    label_suffix = ""
+                    
+                    # Check if week falls during vacation period
+                    # If yes, don't apply public holiday extensions (vacations dominate)
+                    week_in_vacation = (
+                        self._is_in_vacation_period(monday, vacation_windows) or
+                        self._is_in_vacation_period(sunday, vacation_windows) or
+                        self._is_in_vacation_period(next_monday, vacation_windows)
+                    )
+                    
+                    # Only apply public holidays if NOT during vacation period
+                    if not week_in_vacation:
+                        # Check if Monday is a holiday (extend from previous Friday)
+                        monday_is_holiday = monday.date() in holidays
+                        # Check if Friday is a holiday (extend to next Monday)
+                        friday = pointer + timedelta(days=4)
+                        friday_is_holiday = friday.date() in holidays
+                        
+                        if monday_is_holiday:
+                            # Lundi férié: start previous Friday instead
+                            window_start = previous_friday
+                            label_suffix = " + Lundi férié"
+                        
+                        if friday_is_holiday:
+                            # Vendredi férié: extend to next Monday
+                            window_end = next_monday
+                            label_suffix = " + Vendredi férié" if not label_suffix else " + Pont"
                     
                     # Get label from custody type definition
                     type_label = CUSTODY_TYPES.get(custody_type, {}).get("label", "Garde")
@@ -775,6 +875,9 @@ class CustodyScheduleManager:
 
         if custody_type in ("even_weekends", "odd_weekends"):
             target_parity = 0 if custody_type == "even_weekends" else 1
+            base = self._first_monday_with_week_parity(reference_year, target_parity)
+        elif custody_type in ("alternate_week_even", "alternate_week_odd"):
+            target_parity = 0 if custody_type == "alternate_week_even" else 1
             base = self._first_monday_with_week_parity(reference_year, target_parity)
         else:
             base = datetime(reference_year, 1, 1, tzinfo=self._tz)

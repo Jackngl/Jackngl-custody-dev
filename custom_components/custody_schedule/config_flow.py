@@ -105,6 +105,8 @@ def _custody_type_selector() -> selector.SelectSelector:
     """Create a custody type selector with French labels."""
     translations = {
         "alternate_week": "Semaines alternées (1/1)",
+        "alternate_week_even": "Semaines alternées - semaines paires",
+        "alternate_week_odd": "Semaines alternées - semaines impaires",
         "even_weekends": "Week-ends semaines paires",
         "odd_weekends": "Week-ends semaines impaires",
         "two_two_three": "2-2-3",
@@ -320,15 +322,15 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             cleaned = dict(user_input)
             cleaned[CONF_ARRIVAL_TIME] = _time_to_str(user_input.get(CONF_ARRIVAL_TIME), "08:00")
             cleaned[CONF_DEPARTURE_TIME] = _time_to_str(user_input.get(CONF_DEPARTURE_TIME), "19:00")
-            # For even_weekends/odd_weekends, start_day is not used (based on ISO week parity)
+            # For even_weekends/odd_weekends/alternate_week_even/alternate_week_odd, start_day is not used (based on ISO week parity)
             # But we still save it for other custody types
             self._data.update(cleaned)
             return await self.async_step_vacations()
 
         # Use saved data if user goes back
         custody_type = self._data.get(CONF_CUSTODY_TYPE, "alternate_week")
-        # start_day is only relevant for custody types that use cycles (not even_weekends/odd_weekends)
-        show_start_day = custody_type not in ("even_weekends", "odd_weekends")
+        # start_day is only relevant for custody types that use cycles (not even_weekends/odd_weekends/alternate_week_even/alternate_week_odd)
+        show_start_day = custody_type not in ("even_weekends", "odd_weekends", "alternate_week_even", "alternate_week_odd")
         
         schema_dict = {
             vol.Required(
@@ -489,14 +491,14 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         """Modify custody type, reference year, and start day."""
         if user_input:
             cleaned = dict(user_input)
-            # For even_weekends/odd_weekends, start_day is not used (based on ISO week parity)
+            # For even_weekends/odd_weekends/alternate_week_even/alternate_week_odd, start_day is not used (based on ISO week parity)
             self._data.update(cleaned)
             return self.async_create_entry(title="", data=self._data)
 
         data = {**self._entry.data, **(self._entry.options or {})}
         custody_type = data.get(CONF_CUSTODY_TYPE, "alternate_week")
-        # start_day is only relevant for custody types that use cycles (not even_weekends/odd_weekends)
-        show_start_day = custody_type not in ("even_weekends", "odd_weekends")
+        # start_day is only relevant for custody types that use cycles (not even_weekends/odd_weekends/alternate_week_even/alternate_week_odd)
+        show_start_day = custody_type not in ("even_weekends", "odd_weekends", "alternate_week_even", "alternate_week_odd")
         
         schema_dict = {
             vol.Required(

@@ -88,6 +88,8 @@
   "selector": {
     "custody_type": {
       "alternate_week": "Alternating weeks (1/1)",
+      "alternate_week_even": "Alternating weeks - even weeks",
+      "alternate_week_odd": "Alternating weeks - odd weeks",
       "even_weekends": "Even week weekends",
       "odd_weekends": "Odd week weekends",
       "two_two_three": "2-2-3",
