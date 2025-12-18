@@ -197,6 +197,7 @@ def _vacation_rule_selector() -> selector.SelectSelector:
 def _summer_rule_selector() -> selector.SelectSelector:
     """Create a summer rule selector with French labels."""
     translations = {
+        "summer_half_parity": "Été - moitié selon année (impair: 1ère / pair: 2ème)",
         "july_first_half": "Juillet - 1ère moitié",
         "july_second_half": "Juillet - 2ème moitié",
         "july_even_weeks": "Juillet - semaines paires",

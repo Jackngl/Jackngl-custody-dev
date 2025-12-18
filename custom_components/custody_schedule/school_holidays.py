@@ -15,7 +15,7 @@ from homeassistant.util import dt as dt_util
 from .const import HOLIDAY_API, LOGGER
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class SchoolHoliday:
     """Represent a school holiday period."""
 

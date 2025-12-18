@@ -345,72 +345,64 @@ class CustodyScheduleManager:
             if self._config.get(CONF_VACATION_RULE) in VACATION_RULES
             else None
         )
-        # Get school level for adjusting vacation start dates
-        school_level = self._config.get(CONF_SCHOOL_LEVEL, "primary")
-        
+
         for holiday in holidays:
-            # Adjust start date based on school level (Friday for primary, Saturday for middle/high)
-            start = self._adjust_vacation_start(holiday.start, school_level)
-            end = holiday.end
-            
-            # End is Sunday at departure_time if API says Monday (school resumes)
-            forced_end = self._force_vacation_end(holiday.end)
-            
-            # Calculate custody window start (Friday at arrival_time for primary)
-            custody_start = self._apply_time(start, self._arrival_time)
-            
-            # Midpoint is calculated between actual custody times:
-            # - Start: Friday at arrival_time (16:15)
-            # - End: Sunday at departure_time (19:00)
-            # This gives the exact midpoint for sharing vacation time
-            midpoint = custody_start + (forced_end - custody_start) / 2
-            
-            if forced_end < now:
+            start, end, midpoint = self._effective_holiday_bounds(holiday)
+            if end < now:
                 continue
-            
+
+            # Always add a filter window covering the full effective vacation period.
+            # This enforces: vacances scolaires > garde normale (no weekend/week pattern windows inside holidays).
+            windows.append(
+                CustodyWindow(
+                    start=start,
+                    end=end,
+                    label=f"{holiday.name} - Période complète (filtrage)",
+                    source="vacation_filter",
+                )
+            )
+
             applied = False
             if summer_rule and summer_rule in SUMMER_RULES and self._is_summer_break(holiday):
                 windows.extend(self._summer_windows(holiday, summer_rule))
                 applied = True
-            
+
             if not rule or applied:
                 continue
 
-            # Apply arrival/departure times to vacation windows
             window_start = start
-            window_end = forced_end
-            
+            window_end = end
+
             if rule == "first_week":
                 window_start = self._apply_time(start, self._arrival_time)
-                window_end = min(forced_end, start + timedelta(days=7))
+                window_end = min(end, start + timedelta(days=7))
                 window_end = self._apply_time(window_end, self._departure_time)
             elif rule == "second_week":
                 window_start = start + timedelta(days=7)
                 window_start = self._apply_time(window_start, self._arrival_time)
-                window_end = min(forced_end, window_start + timedelta(days=7))
+                window_end = min(end, window_start + timedelta(days=7))
                 window_end = self._apply_time(window_end, self._departure_time)
             elif rule == "first_half":
-                window_start = self._apply_time(start, self._arrival_time)
+                window_start = start
                 window_end = midpoint
             elif rule == "second_half":
                 window_start = midpoint
-                window_end = forced_end
+                window_end = end
             elif rule == "even_weeks":
                 window_start = start
                 if int(start.strftime("%U")) % 2 != 0:
                     window_start = start + timedelta(days=7)
                 window_start = self._apply_time(window_start, self._arrival_time)
-                window_end = min(forced_end, window_start + timedelta(days=7))
+                window_end = min(end, window_start + timedelta(days=7))
                 window_end = self._apply_time(window_end, self._departure_time)
             elif rule == "odd_weeks":
                 window_start = start
                 if int(start.strftime("%U")) % 2 == 0:
                     window_start = start + timedelta(days=7)
                 window_start = self._apply_time(window_start, self._arrival_time)
-                window_end = min(forced_end, window_start + timedelta(days=7))
+                window_end = min(end, window_start + timedelta(days=7))
                 window_end = self._apply_time(window_end, self._departure_time)
             elif rule == "even_weekends":
-                # ... weekends logic ...
                 days_until_saturday = (5 - start.weekday()) % 7
                 saturday = start + timedelta(days=days_until_saturday)
                 _, iso_week, _ = saturday.isocalendar()
@@ -418,9 +410,8 @@ class CustodyScheduleManager:
                     saturday += timedelta(days=7)
                 sunday = saturday + timedelta(days=1)
                 window_start = self._apply_time(saturday, self._arrival_time)
-                window_end = min(forced_end, self._apply_time(sunday, self._departure_time))
+                window_end = min(end, self._apply_time(sunday, self._departure_time))
             elif rule == "odd_weekends":
-                # ... weekends logic ...
                 days_until_saturday = (5 - start.weekday()) % 7
                 saturday = start + timedelta(days=days_until_saturday)
                 _, iso_week, _ = saturday.isocalendar()
@@ -428,46 +419,50 @@ class CustodyScheduleManager:
                     saturday += timedelta(days=7)
                 sunday = saturday + timedelta(days=1)
                 window_start = self._apply_time(saturday, self._arrival_time)
-                window_end = min(forced_end, self._apply_time(sunday, self._departure_time))
+                window_end = min(end, self._apply_time(sunday, self._departure_time))
             elif rule == "july":
                 if start.month != 7 and end.month != 7:
                     continue
                 window_start = self._apply_time(start, self._arrival_time)
-                window_end = min(forced_end, datetime(start.year, 7, 31, tzinfo=start.tzinfo))
+                window_end = min(end, datetime(start.year, 7, 31, tzinfo=start.tzinfo))
                 window_end = self._apply_time(window_end, self._departure_time)
             elif rule == "august":
                 if start.month != 8 and end.month != 8:
                     continue
                 window_start = self._apply_time(start, self._arrival_time)
-                window_end = min(forced_end, datetime(start.year, 8, 31, tzinfo=start.tzinfo))
+                window_end = min(end, datetime(start.year, 8, 31, tzinfo=start.tzinfo))
                 window_end = self._apply_time(window_end, self._departure_time)
             elif rule == "first_week_even_year":
                 if start.year % 2 == 0:
-                    window_start = self._apply_time(start, self._arrival_time)
+                    window_start = start
                     window_end = midpoint
                 else:
                     continue
             elif rule == "first_week_odd_year":
                 if start.year % 2 == 1:
-                    window_start = self._apply_time(start, self._arrival_time)
+                    window_start = start
                     window_end = midpoint
                 else:
                     continue
             elif rule == "second_week_even_year":
                 if start.year % 2 == 0:
                     window_start = midpoint
-                    window_end = forced_end
+                    window_end = end
+                    if window_end <= window_start:
+                        continue
                 else:
                     continue
             elif rule == "second_week_odd_year":
                 if start.year % 2 == 1:
                     window_start = midpoint
-                    window_end = forced_end
+                    window_end = end
+                    if window_end <= window_start:
+                        continue
                 else:
                     continue
             else:
                 window_start = self._apply_time(start, self._arrival_time)
-                window_end = forced_end
+                window_end = self._apply_time(end, self._departure_time)
 
             if window_end <= window_start:
                 continue
@@ -480,21 +475,6 @@ class CustodyScheduleManager:
                     source="vacation",
                 )
             )
-            
-            # Add a filter window covering the entire vacation period
-            # This ensures normal pattern windows are removed during the entire vacation
-            # Find Monday of the week containing the vacation start
-            monday_start_week = start - timedelta(days=start.weekday())
-            # Find Sunday of the week containing the vacation end
-            sunday_end_week = end - timedelta(days=end.weekday()) + timedelta(days=6)
-            windows.append(
-                CustodyWindow(
-                    start=monday_start_week,
-                    end=sunday_end_week + timedelta(days=1),
-                    label=f"{holiday.name} - Période complète (filtrage)",
-                    source="vacation_filter",
-                )
-            )
         return windows
 
     def _is_summer_break(self, holiday) -> bool:
@@ -504,10 +484,39 @@ class CustodyScheduleManager:
 
     def _summer_windows(self, holiday, rule: str) -> list[CustodyWindow]:
         """Return windows aligned with the summer rule."""
-        start = holiday.start
-        end = holiday.end
+        # Use effective vacation bounds (Friday 16:15 -> Sunday 19:00) for consistent behavior
+        start, end, midpoint = self._effective_holiday_bounds(holiday)
         windows: list[CustodyWindow] = []
         is_even_year = start.year % 2 == 0
+
+        if rule == "summer_half_parity":
+            # Parity-based summer split aligned with your rule:
+            # - Odd year  => 1ère moitié de juillet (jusqu'au 16/07 à l'heure d'arrivée)
+            # - Even year => 2ème moitié de juillet + août (à partir du 16/07 à l'heure d'arrivée)
+            # End of summer custody always uses the effective end (Sunday at departure_time).
+            cutoff = datetime(start.year, 7, 16, tzinfo=start.tzinfo)
+            cutoff = self._apply_time(cutoff, self._arrival_time)
+            cutoff = min(max(cutoff, start), end)
+
+            if start.year % 2 == 0:
+                windows.append(
+                    CustodyWindow(
+                        start=cutoff,
+                        end=end,
+                        label="Vacances scolaires - Été (2ème moitié, années paires)",
+                        source="summer",
+                    )
+                )
+            else:
+                windows.append(
+                    CustodyWindow(
+                        start=start,
+                        end=cutoff,
+                        label="Vacances scolaires - Été (1ère moitié, années impaires)",
+                        source="summer",
+                    )
+                )
+            return windows
 
         if rule == "july_first_half":
             window_end = datetime(start.year, 7, 15, 23, 59, 59, tzinfo=start.tzinfo)
@@ -802,6 +811,47 @@ class CustodyScheduleManager:
         """Attach the configured time to a datetime."""
         return dt_value.replace(hour=target.hour, minute=target.minute, second=0, microsecond=0)
 
+    def _effective_holiday_bounds(self, holiday) -> tuple[datetime, datetime, datetime]:
+        """Return (effective_start, effective_end, midpoint) for a holiday.
+
+        Custom vacation custody rules:
+        - Effective start: previous Friday at arrival_time (e.g., school pickup Friday 16:15),
+          even if the API indicates a Saturday start.
+        - Effective end: previous Sunday at departure_time (e.g., Sunday 19:00),
+          even if the API indicates a Monday reprise at 00:00.
+        - Midpoint: exact half between effective start and effective end (midpoint time overrides standard times).
+        """
+        start_dt = dt_util.as_local(holiday.start)
+        end_dt = dt_util.as_local(holiday.end)
+
+        start_date = start_dt.date()
+        end_date = end_dt.date()
+
+        # If the API returns an end at 00:00, it's typically the "reprise" day (exclusive end)
+        if end_dt.hour == 0 and end_dt.minute == 0 and end_dt.second == 0:
+            end_date = end_date - timedelta(days=1)
+
+        # Effective start is the previous Friday (school pickup)
+        effective_start_date = start_date
+        while effective_start_date.weekday() != 4:  # Friday
+            effective_start_date -= timedelta(days=1)
+
+        # Effective end is the previous Sunday (end of vacation before school resumes)
+        effective_end_date = end_date
+        while effective_end_date.weekday() != 6:  # Sunday
+            effective_end_date -= timedelta(days=1)
+
+        effective_start = datetime.combine(effective_start_date, self._arrival_time, start_dt.tzinfo)
+        effective_end = datetime.combine(effective_end_date, self._departure_time, end_dt.tzinfo)
+
+        # Safety fallback: avoid inverted windows on unexpected API shapes
+        if effective_end <= effective_start:
+            effective_start = self._apply_time(start_dt, self._arrival_time)
+            effective_end = self._apply_time(end_dt, self._departure_time)
+
+        midpoint = effective_start + (effective_end - effective_start) / 2
+        return effective_start, effective_end, midpoint
+
     def _parse_time(self, value: str) -> time:
         """Parse HH:MM strings into a time object."""
         try:
@@ -818,23 +868,24 @@ class CustodyScheduleManager:
 
         holidays = await self._holidays.async_list(zone, now.year)
         for holiday in holidays:
-            if holiday.start <= now <= holiday.end:
+            effective_start, effective_end, _mid = self._effective_holiday_bounds(holiday)
+            if effective_start <= now <= effective_end:
                 return "vacation", holiday.name
 
         return "school", None
 
-    async def _get_next_vacation(self, now: datetime) -> tuple[str | None, datetime | None, datetime | None, int | None, list[dict[str, Any]]]:
-        """Return information about the next upcoming vacation.
-        
-        If currently in vacation, returns the current vacation.
-        Otherwise, returns the next vacation that hasn't started yet.
-        
-        Adjusts the start date based on school level:
-        - Primary: Friday afternoon (departure time) - API already returns Friday
-        - Middle/High: Saturday at arrival time
-        
-        Returns:
-            (name, start_date, end_date, days_until, raw_holidays_list)
+    async def _get_next_vacation(
+        self, now: datetime
+    ) -> tuple[str | None, datetime | None, datetime | None, int | None, list[dict[str, Any]]]:
+        """Return information about the next upcoming vacation (custody-focused).
+
+        Uses the *effective* vacation bounds (custom rules):
+        - Start: previous Friday at arrival_time (pickup at school)
+        - End: previous Sunday at departure_time (return Sunday evening)
+        - Midpoint: exact half (time is preserved and overrides standard times)
+
+        Returned start/end correspond to the next *custody segment* during that vacation
+        (e.g., if rule is "second_half", start is the midpoint, not the vacation start).
         """
         from .const import LOGGER
         
@@ -850,124 +901,108 @@ class CustodyScheduleManager:
         if not holidays:
             LOGGER.warning("No holidays found for zone %s, year %s", zone, now.year)
         
-        # Sort holidays by start date
-        sorted_holidays = sorted(holidays, key=lambda h: h.start)
+        # Sort holidays by effective start date (more relevant than raw API start)
+        sorted_holidays = sorted(holidays, key=lambda h: self._effective_holiday_bounds(h)[0])
         
         # Build raw holidays list for debugging/display
         # Filter to only show holidays from current calendar year onwards
         # This includes holidays from current school year and previous school year if they're in current year
         school_holidays_raw = []
         
+        weekday_fr = {
+            "Monday": "Lundi",
+            "Tuesday": "Mardi",
+            "Wednesday": "Mercredi",
+            "Thursday": "Jeudi",
+            "Friday": "Vendredi",
+            "Saturday": "Samedi",
+            "Sunday": "Dimanche",
+        }
+
         for holiday in sorted_holidays:
-            # Only include holidays that start in the current calendar year or later
-            # This includes holidays from previous school year if they're in current year
-            if holiday.start.year < now.year:
+            effective_start, effective_end, _midpoint = self._effective_holiday_bounds(holiday)
+
+            # Only show upcoming/current holidays (based on effective end)
+            if effective_end < now:
                 continue
-            # Exclude holidays that have already ended (based on system date)
-            if holiday.end < now:
-                continue
-            
-            # Format dates in French format without time
-            start_date_fr = holiday.start.strftime("%d %B %Y")
-            end_date_fr = holiday.end.strftime("%d %B %Y")
-            
-            # French weekday names
-            weekday_fr = {
-                "Monday": "Lundi",
-                "Tuesday": "Mardi", 
-                "Wednesday": "Mercredi",
-                "Thursday": "Jeudi",
-                "Friday": "Vendredi",
-                "Saturday": "Samedi",
-                "Sunday": "Dimanche"
-            }
-            
-            school_holidays_raw.append({
-                "name": holiday.name,
-                "start": start_date_fr,
-                "end": end_date_fr,
-                "start_weekday": weekday_fr.get(holiday.start.strftime("%A"), holiday.start.strftime("%A")),
-                "end_weekday": weekday_fr.get(holiday.end.strftime("%A"), holiday.end.strftime("%A")),
-            })
-        
-        # Get school level (default to primary)
-        school_level = self._config.get(CONF_SCHOOL_LEVEL, "primary")
-        
-        # First, check if we're currently in a vacation
-        current_vacation = None
-        adjusted_start = None
-        for holiday in sorted_holidays:
-            # Adjust start date based on school level
-            adjusted_start = self._adjust_vacation_start(holiday.start, school_level)
-            if adjusted_start <= now <= holiday.end:
-                current_vacation = holiday
-                break
-        
-        # Get vacation rule to calculate the actual custody window end
-        vacation_rule = (
-            self._config.get(CONF_VACATION_RULE)
-            if self._config.get(CONF_VACATION_RULE) in VACATION_RULES
-            else None
-        )
-        
-        def _calculate_vacation_window_end(holiday_start: datetime, holiday_end: datetime, rule: str | None) -> datetime:
-            """Calculate the actual end of the custody window based on vacation rule.
-            
-            Uses the same calculation as _generate_vacation_windows:
-            - Midpoint is calculated between custody_start (Fri 16:15) and forced_end (Sun 19:00)
-            - This gives the exact midpoint for sharing vacation time
-            """
-            if not rule:
-                return self._force_vacation_end(holiday_end)
-            
-            # Get effective custody boundaries
-            forced_end = self._force_vacation_end(holiday_end)
-            custody_start = self._apply_time(holiday_start, self._arrival_time)
-            
-            # Midpoint is calculated between actual custody times
-            # This matches the calculation in _generate_vacation_windows
-            midpoint = custody_start + (forced_end - custody_start) / 2
-            
-            # Calculate based on the rule
-            if rule in ("first_week_even_year", "first_week_odd_year", "first_half"):
-                # First half: ends at exact midpoint between custody times
-                return midpoint
-            elif rule in ("second_week_even_year", "second_week_odd_year", "second_half"):
-                # Second half: ends at forced Sunday end
-                return forced_end
-            elif rule == "first_week":
-                # First week: ends 7 days after start
-                week_end = min(forced_end, custody_start + timedelta(days=7))
-                return self._apply_time(week_end, self._departure_time)
-            elif rule == "second_week":
-                # Second week: starts 7 days after holiday start, ends 7 days later
-                week_start = custody_start + timedelta(days=7)
-                week_end = min(forced_end, week_start + timedelta(days=7))
-                return self._apply_time(week_end, self._departure_time)
-            else:
-                # For other rules (even_weekends, odd_weekends, etc.), return forced end
-                return forced_end
-        
-        if current_vacation:
-            # We're in vacation, return current vacation info with adjusted start
-            window_end = _calculate_vacation_window_end(adjusted_start, current_vacation.end, vacation_rule)
-            return (
-                current_vacation.name,
-                adjusted_start,
-                window_end,
-                0,  # Already in vacation
-                school_holidays_raw,
+            school_holidays_raw.append(
+                {
+                    "name": holiday.name,
+                    "official_start": dt_util.as_local(holiday.start).strftime("%d %B %Y"),
+                    "official_end": dt_util.as_local(holiday.end).strftime("%d %B %Y"),
+                    "official_start_weekday": weekday_fr.get(
+                        dt_util.as_local(holiday.start).strftime("%A"),
+                        dt_util.as_local(holiday.start).strftime("%A"),
+                    ),
+                    "official_end_weekday": weekday_fr.get(
+                        dt_util.as_local(holiday.end).strftime("%A"),
+                        dt_util.as_local(holiday.end).strftime("%A"),
+                    ),
+                    "effective_start": effective_start.strftime("%d %B %Y %H:%M"),
+                    "effective_end": effective_end.strftime("%d %B %Y %H:%M"),
+                }
             )
+
+        vacation_rule = (
+            self._config.get(CONF_VACATION_RULE) if self._config.get(CONF_VACATION_RULE) in VACATION_RULES else None
+        )
+        summer_rule = self._config.get(CONF_SUMMER_RULE) if self._config.get(CONF_SUMMER_RULE) in SUMMER_RULES else None
+
+        def _custody_segment_for_holiday(holiday_obj) -> tuple[datetime, datetime]:
+            eff_start, eff_end, mid = self._effective_holiday_bounds(holiday_obj)
+
+            # Summer special-case
+            if summer_rule and self._is_summer_break(holiday_obj):
+                if summer_rule == "summer_half_parity":
+                    cutoff = datetime(eff_start.year, 7, 16, tzinfo=eff_start.tzinfo)
+                    cutoff = self._apply_time(cutoff, self._arrival_time)
+                    cutoff = min(max(cutoff, eff_start), eff_end)
+                    return (cutoff, eff_end) if eff_start.year % 2 == 0 else (eff_start, cutoff)
+                # Other summer rules generate their own windows; fall back to the full effective interval
+                return eff_start, eff_end
+
+            if not vacation_rule:
+                return eff_start, eff_end
+
+            if vacation_rule in ("first_half", "first_week_even_year", "first_week_odd_year"):
+                return eff_start, mid
+            if vacation_rule in ("second_half", "second_week_even_year", "second_week_odd_year"):
+                return mid, eff_end
+
+            # For other rules (weekends parity, july/august slices, etc.), default to the full effective interval
+            return eff_start, eff_end
         
-        # Not in vacation, find the next one
-        next_vacation = None
+        # First, check if we're currently in a vacation (effective bounds)
         for holiday in sorted_holidays:
-            adjusted_start = self._adjust_vacation_start(holiday.start, school_level)
-            LOGGER.debug("Checking holiday: %s, official_start=%s, adjusted_start=%s, now=%s", 
-                        holiday.name, holiday.start, adjusted_start, now)
-            if adjusted_start > now:
+            eff_start, eff_end, _mid = self._effective_holiday_bounds(holiday)
+            if eff_start <= now <= eff_end:
+                seg_start, seg_end = _custody_segment_for_holiday(holiday)
+                return (
+                    holiday.name,
+                    seg_start,
+                    seg_end,
+                    0,
+                    school_holidays_raw,
+                )
+        
+        # Not in vacation, find the next custody segment start
+        next_vacation = None
+        next_seg_start: datetime | None = None
+        next_seg_end: datetime | None = None
+        for holiday in sorted_holidays:
+            seg_start, seg_end = _custody_segment_for_holiday(holiday)
+            LOGGER.debug(
+                "Checking holiday (custody segment): %s, seg_start=%s, seg_end=%s, now=%s",
+                holiday.name,
+                seg_start,
+                seg_end,
+                now,
+            )
+            if seg_start > now:
                 next_vacation = holiday
-                LOGGER.debug("Found next vacation: %s, adjusted_start=%s", holiday.name, adjusted_start)
+                next_seg_start = seg_start
+                next_seg_end = seg_end
+                LOGGER.debug("Found next vacation custody segment: %s, start=%s", holiday.name, next_seg_start)
                 break
         
         if not next_vacation:
@@ -976,17 +1011,16 @@ class CustodyScheduleManager:
                 LOGGER.debug("Last holiday: %s (ends %s)", sorted_holidays[-1].name, sorted_holidays[-1].end)
             return None, None, None, None, school_holidays_raw
         
-        # Calculate days until vacation using adjusted start
-        delta = adjusted_start - now
+        if next_seg_start is None or next_seg_end is None:
+            return None, None, None, None, school_holidays_raw
+
+        delta = next_seg_start - now
         days_until = max(0, round(delta.total_seconds() / 86400, 2))
-        
-        # Calculate the actual end of the custody window based on vacation rule
-        window_end = _calculate_vacation_window_end(adjusted_start, next_vacation.end, vacation_rule)
         
         return (
             next_vacation.name,
-            adjusted_start,
-            window_end,
+            next_seg_start,
+            next_seg_end,
             days_until,
             school_holidays_raw,
         )
