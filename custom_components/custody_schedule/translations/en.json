@@ -95,7 +95,7 @@
       "custom": "Custom"
     },
     "summer_rule": {
-      "summer_parity_auto": "Automatic by year (even=August, odd=July)",
+      "summer_parity_auto": "Automatic by reference (even/odd year)",
       "july_first_half": "July - first half (1-15 July)",
       "july_second_half": "July - second half (16-31 July)",
       "august_first_half": "August - first half (1-15 August)",

@@ -95,7 +95,7 @@
       "custom": "Personnalisé"
     },
     "summer_rule": {
-      "summer_parity_auto": "Automatique selon année (paire=Août, impaire=Juillet)",
+      "summer_parity_auto": "Automatique selon référence (année paire/impaire)",
       "july_first_half": "Juillet - 1ère moitié (1-15 juillet)",
       "july_second_half": "Juillet - 2ème moitié (16-31 juillet)",
       "august_first_half": "Août - 1ère moitié (1-15 août)",
