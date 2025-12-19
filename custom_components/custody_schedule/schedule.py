@@ -677,89 +677,133 @@ class CustodyScheduleManager:
         is_even_year = start.year % 2 == 0
 
         if rule == "summer_parity_auto":
-            # Règle spéciale : Année paire = Août, Année impaire = Juillet
-            # Cette règle est basée UNIQUEMENT sur la parité de l'année, pas sur reference_year
-            # reference_year s'applique uniquement aux vacances non-été
+            # Règle spéciale basée sur reference_year et parité de l'année
+            # reference_year='even': années paires = Août, années impaires = Juillet
+            # reference_year='odd': années impaires = Août, années paires = Juillet
+            reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
             
-            # Simple logic: even year = August (full month), odd year = July (full month)
-            if is_even_year:
-                # Année paire : Août complet
+            # Déterminer le mois selon reference_year et parité de l'année
+            if reference_year == "even":
+                # reference_year='even': années paires → Août, années impaires → Juillet
+                assign_august = is_even_year
+            else:
+                # reference_year='odd': années impaires → Août, années paires → Juillet
+                assign_august = not is_even_year
+            
+            if assign_august:
+                # Août complet
                 august_start = datetime(start.year, 8, 1, tzinfo=start.tzinfo)
                 august_end = datetime(start.year, 8, 31, 23, 59, 59, tzinfo=start.tzinfo)
                 if august_end >= start and august_start <= end:
+                    ref_year_label = "paire" if reference_year == "even" else "impaire"
+                    year_label = "paire" if is_even_year else "impaire"
                     windows.append(
                         CustodyWindow(
                             start=self._apply_time(max(start, august_start), self._arrival_time),
                             end=self._force_vacation_end(min(end, august_end)),
-                            label="Vacances scolaires - Août complet (année paire)",
+                            label=f"Vacances scolaires - Août complet (réf={ref_year_label}, année={year_label})",
                             source="summer",
                         )
                     )
             else:
-                # Année impaire : Juillet complet
+                # Juillet complet
                 july_start = datetime(start.year, 7, 1, tzinfo=start.tzinfo)
                 july_end = datetime(start.year, 7, 31, 23, 59, 59, tzinfo=start.tzinfo)
                 if july_end >= start and july_start <= end:
+                    ref_year_label = "paire" if reference_year == "even" else "impaire"
+                    year_label = "paire" if is_even_year else "impaire"
                     windows.append(
                         CustodyWindow(
                             start=self._apply_time(max(start, july_start), self._arrival_time),
                             end=self._apply_time(min(end, july_end), self._departure_time),
-                            label="Vacances scolaires - Juillet complet (année impaire)",
+                            label=f"Vacances scolaires - Juillet complet (réf={ref_year_label}, année={year_label})",
                             source="summer",
                         )
                     )
         elif rule == "july_first_half":
-            # 1ère moitié de juillet (1-15 juillet)
-            window_start = datetime(start.year, 7, 1, tzinfo=start.tzinfo)
-            window_end = datetime(start.year, 7, 15, 23, 59, 59, tzinfo=start.tzinfo)
-            if window_end >= start and window_start <= end:
-                windows.append(
-                    CustodyWindow(
-                        start=self._apply_time(max(start, window_start), self._arrival_time),
-                        end=min(end, window_end),
-                        label="Vacances scolaires - Juillet (1ère moitié)",
-                        source="summer",
+            # 1ère moitié de juillet (1-15 juillet) selon reference_year
+            # reference_year='even': années impaires seulement
+            # reference_year='odd': années paires seulement
+            reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+            should_apply = (reference_year == "even" and not is_even_year) or (reference_year == "odd" and is_even_year)
+            
+            if should_apply:
+                window_start = datetime(start.year, 7, 1, tzinfo=start.tzinfo)
+                window_end = datetime(start.year, 7, 15, 23, 59, 59, tzinfo=start.tzinfo)
+                if window_end >= start and window_start <= end:
+                    ref_year_label = "paire" if reference_year == "even" else "impaire"
+                    year_label = "paire" if is_even_year else "impaire"
+                    windows.append(
+                        CustodyWindow(
+                            start=self._apply_time(max(start, window_start), self._arrival_time),
+                            end=min(end, window_end),
+                            label=f"Vacances scolaires - Juillet (1ère moitié, réf={ref_year_label}, année={year_label})",
+                            source="summer",
+                        )
                     )
-                )
         elif rule == "july_second_half":
-            # 2ème moitié de juillet (16-31 juillet)
-            window_start = datetime(start.year, 7, 16, tzinfo=start.tzinfo)
-            window_end = datetime(start.year, 7, 31, 23, 59, 59, tzinfo=start.tzinfo)
-            if window_end >= start and window_start <= end:
-                windows.append(
-                    CustodyWindow(
-                        start=self._apply_time(max(start, window_start), self._arrival_time),
-                        end=self._apply_time(min(end, window_end), self._departure_time),
-                        label="Vacances scolaires - Juillet (2ème moitié)",
-                        source="summer",
+            # 2ème moitié de juillet (16-31 juillet) selon reference_year
+            # reference_year='even': années paires seulement
+            # reference_year='odd': années impaires seulement
+            reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+            should_apply = (reference_year == "even" and is_even_year) or (reference_year == "odd" and not is_even_year)
+            
+            if should_apply:
+                window_start = datetime(start.year, 7, 16, tzinfo=start.tzinfo)
+                window_end = datetime(start.year, 7, 31, 23, 59, 59, tzinfo=start.tzinfo)
+                if window_end >= start and window_start <= end:
+                    ref_year_label = "paire" if reference_year == "even" else "impaire"
+                    year_label = "paire" if is_even_year else "impaire"
+                    windows.append(
+                        CustodyWindow(
+                            start=self._apply_time(max(start, window_start), self._arrival_time),
+                            end=self._apply_time(min(end, window_end), self._departure_time),
+                            label=f"Vacances scolaires - Juillet (2ème moitié, réf={ref_year_label}, année={year_label})",
+                            source="summer",
+                        )
                     )
-                )
         elif rule == "august_first_half":
-            # 1ère moitié d'août (1-15 août)
-            window_start = datetime(start.year, 8, 1, tzinfo=start.tzinfo)
-            window_end = datetime(start.year, 8, 15, 23, 59, 59, tzinfo=start.tzinfo)
-            if window_end >= start and window_start <= end:
-                windows.append(
-                    CustodyWindow(
-                        start=self._apply_time(max(start, window_start), self._arrival_time),
-                        end=min(end, window_end),
-                        label="Vacances scolaires - Août (1ère moitié)",
-                        source="summer",
+            # 1ère moitié d'août (1-15 août) selon reference_year
+            # reference_year='even': années impaires seulement
+            # reference_year='odd': années paires seulement
+            reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+            should_apply = (reference_year == "even" and not is_even_year) or (reference_year == "odd" and is_even_year)
+            
+            if should_apply:
+                window_start = datetime(start.year, 8, 1, tzinfo=start.tzinfo)
+                window_end = datetime(start.year, 8, 15, 23, 59, 59, tzinfo=start.tzinfo)
+                if window_end >= start and window_start <= end:
+                    ref_year_label = "paire" if reference_year == "even" else "impaire"
+                    year_label = "paire" if is_even_year else "impaire"
+                    windows.append(
+                        CustodyWindow(
+                            start=self._apply_time(max(start, window_start), self._arrival_time),
+                            end=min(end, window_end),
+                            label=f"Vacances scolaires - Août (1ère moitié, réf={ref_year_label}, année={year_label})",
+                            source="summer",
+                        )
                     )
-                )
         elif rule == "august_second_half":
-            # 2ème moitié d'août (16-31 août)
-            window_start = datetime(start.year, 8, 16, tzinfo=start.tzinfo)
-            window_end = datetime(start.year, 8, 31, 23, 59, 59, tzinfo=start.tzinfo)
-            if window_end >= start and window_start <= end:
-                windows.append(
-                    CustodyWindow(
-                        start=self._apply_time(max(start, window_start), self._arrival_time),
-                        end=self._force_vacation_end(min(end, window_end)),
-                        label="Vacances scolaires - Août (2ème moitié)",
-                        source="summer",
+            # 2ème moitié d'août (16-31 août) selon reference_year
+            # reference_year='even': années paires seulement
+            # reference_year='odd': années impaires seulement
+            reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+            should_apply = (reference_year == "even" and is_even_year) or (reference_year == "odd" and not is_even_year)
+            
+            if should_apply:
+                window_start = datetime(start.year, 8, 16, tzinfo=start.tzinfo)
+                window_end = datetime(start.year, 8, 31, 23, 59, 59, tzinfo=start.tzinfo)
+                if window_end >= start and window_start <= end:
+                    ref_year_label = "paire" if reference_year == "even" else "impaire"
+                    year_label = "paire" if is_even_year else "impaire"
+                    windows.append(
+                        CustodyWindow(
+                            start=self._apply_time(max(start, window_start), self._arrival_time),
+                            end=self._force_vacation_end(min(end, window_end)),
+                            label=f"Vacances scolaires - Août (2ème moitié, réf={ref_year_label}, année={year_label})",
+                            source="summer",
+                        )
                     )
-                )
 
         valid_windows = [window for window in windows if window.end > window.start]
         return valid_windows
