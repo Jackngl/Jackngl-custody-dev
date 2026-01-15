@@ -376,6 +376,8 @@ class CustodyScheduleManager:
             overlaps = False
             for vac_start, vac_end in vacation_periods:
                 # Check for overlap: windows overlap if one starts before the other ends
+                # But only if there's a REAL overlap (not just touching at the edges)
+                # A weekend that ends exactly when vacation starts should NOT be filtered
                 if pattern_window.start < vac_end and pattern_window.end > vac_start:
                     overlaps = True
                     break
