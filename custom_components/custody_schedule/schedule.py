@@ -178,9 +178,9 @@ class CustodyScheduleManager:
         windows.extend(self._manual_windows)
         windows.sort(key=lambda window: window.start)
 
-        # Filtrer les fenêtres qui se terminent dans le passé (avec une petite marge pour éviter les problèmes de timing)
-        # Ne garder que les fenêtres qui se terminent après maintenant
-        windows = [w for w in windows if w.end > now_local - timedelta(minutes=1)]
+        # Filtrer STRICTEMENT les fenêtres qui se terminent dans le passé
+        # Ne garder que les fenêtres qui se terminent APRÈS maintenant (pas égal, pas proche)
+        windows = [w for w in windows if w.end > now_local]
 
         current_window = next((window for window in windows if window.start <= now_local < window.end), None)
         # next_window doit être une fenêtre qui commence dans le futur ET qui se termine dans le futur
@@ -196,12 +196,12 @@ class CustodyScheduleManager:
             if current_window:
                 # On est dans une vraie fenêtre de garde
                 next_departure = current_window.end
-                # next_arrival est la prochaine garde APRÈS le départ actuel
+                # S'assurer que next_departure est dans le futur
                 if next_departure and next_departure > now_local:
                     # Chercher la fenêtre qui commence après next_departure
                     next_arrival = next((w.start for w in windows if w.start > next_departure), None)
                 else:
-                    # Si la fin est dans le passé, utiliser la prochaine fenêtre
+                    # Si la fin est dans le passé ou égale à maintenant, utiliser la prochaine fenêtre
                     next_departure = next_window.end if next_window else None
                     next_arrival = next_window.start if next_window else None
             elif override_state is True and self._presence_override and self._presence_override.get("until"):
@@ -223,6 +223,16 @@ class CustodyScheduleManager:
             # et next_departure est la fin de cette même prochaine fenêtre
             next_arrival = next_window.start if next_window else None
             next_departure = next_window.end if next_window else None
+            
+            # S'assurer que next_departure est toujours dans le futur
+            if next_departure and next_departure <= now_local:
+                # Si next_departure est dans le passé, chercher la prochaine fenêtre après
+                next_departure = next((w.end for w in windows if w.end > now_local), None)
+                if next_departure:
+                    # Trouver la fenêtre correspondante pour next_arrival
+                    matching_window = next((w for w in windows if w.end == next_departure), None)
+                    if matching_window:
+                        next_arrival = matching_window.start
 
         days_remaining = None
         target_dt = next_departure if is_present else next_arrival
