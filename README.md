@@ -101,6 +101,7 @@ La configuration se fait entièrement via l'interface utilisateur :
    - Notifications
    - Synchronisation calendrier (Google Calendar)
    - Calendrier cible + fenêtre de synchro
+   - Intervalle de synchro
    - Exceptions
    - **URL d'API personnalisée** (optionnel)
 
@@ -124,6 +125,7 @@ sur un calendrier Home Assistant (`calendar.*`) — y compris ceux fournis par l
 3. Activer **Synchronisation Google Calendar**
 4. Choisir le **Calendrier cible**
 5. Définir la **fenêtre de synchro (jours)** (par défaut 120)
+6. Définir l'**intervalle de synchro (heures)** (par défaut 1)
 
 ## 🔧 Services disponibles
 
