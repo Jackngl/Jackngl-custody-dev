@@ -232,16 +232,21 @@ Pour chaque enfant configuré, les entités suivantes sont créées automatiquem
 
 | Entité | Type | Description |
 |--------|------|-------------|
-| `binary_sensor.<nom>_planning_de_garde_presence` | Binary Sensor | État présent/absent (`on`/`off`) |
-| `sensor.<nom>_planning_de_garde_prochaine_arrivee` | Sensor | Prochaine arrivée (datetime) |
-| `sensor.<nom>_planning_de_garde_prochain_depart` | Sensor | Prochain départ (datetime) |
-| `sensor.<nom>_planning_de_garde_jours_restants` | Sensor | Jours restants avant prochain changement |
-| `sensor.<nom>_planning_de_garde_periode_actuelle` | Sensor | Période actuelle (`school`/`vacation`) |
-| `calendar.<nom>_planning_de_garde_calendrier` | Calendar | Calendrier avec toutes les périodes |
+| `binary_sensor.<nom>_presence` | Binary Sensor | État présent/absent (`on`/`off`) |
+| `device_tracker.<nom>_suivi` | Device Tracker | Suivi de présence (`home`/`not_home`) |
+| `sensor.<nom>_next_arrival` | Sensor | Prochaine arrivée (datetime) |
+| `sensor.<nom>_next_departure` | Sensor | Prochain départ (datetime) |
+| `sensor.<nom>_days_remaining` | Sensor | Jours restants avant prochain changement |
+| `sensor.<nom>_current_period` | Sensor | Période actuelle (`school`/`vacation`) |
+| `sensor.<nom>_next_vacation_name` | Sensor | Prochaines vacances scolaires |
+| `sensor.<nom>_next_vacation_start` | Sensor | Date des prochaines vacances |
+| `sensor.<nom>_days_until_vacation` | Sensor | Jours jusqu'aux vacances |
+| `calendar.<nom>_calendar` | Calendar | Calendrier avec toutes les périodes |
 
 **Note :** `<nom>` correspond au nom de l'enfant en minuscules avec les espaces remplacés par des underscores. Par exemple, pour un enfant nommé "Lucas", les entités seront :
-- `binary_sensor.lucas_planning_de_garde_presence`
-- `sensor.lucas_planning_de_garde_prochaine_arrivee`
+- `binary_sensor.lucas_presence`
+- `device_tracker.lucas_suivi`
+- `sensor.lucas_next_arrival`
 - etc.
 
 **Attributs disponibles :**
@@ -260,7 +265,7 @@ automation:
     description: "Ajuste le chauffage selon la présence de l'enfant"
     trigger:
       - platform: state
-        entity_id: binary_sensor.lucas_planning_de_garde_presence
+        entity_id: binary_sensor.lucas_presence
     action:
       - service: climate.set_preset_mode
         target:
@@ -282,12 +287,12 @@ automation:
     description: "Notifie 1 jour avant l'arrivée"
     trigger:
       - platform: numeric_state
-        entity_id: sensor.lucas_planning_de_garde_jours_restants
+        entity_id: sensor.lucas_days_remaining
         below: 1
         above: 0
     condition:
       - condition: state
-        entity_id: binary_sensor.lucas_planning_de_garde_presence
+        entity_id: binary_sensor.lucas_presence
         state: "off"
     action:
       - service: notify.mobile_app_telephone
@@ -364,15 +369,15 @@ automation:
 type: entities
 title: Planning de garde
 entities:
-  - entity: binary_sensor.lucas_planning_de_garde_presence
+  - entity: binary_sensor.lucas_presence
     name: Présence
-  - entity: sensor.lucas_planning_de_garde_prochaine_arrivee
+  - entity: sensor.lucas_next_arrival
     name: Prochaine arrivée
-  - entity: sensor.lucas_planning_de_garde_prochain_depart
+  - entity: sensor.lucas_next_departure
     name: Prochain départ
-  - entity: sensor.lucas_planning_de_garde_jours_restants
+  - entity: sensor.lucas_days_remaining
     name: Jours restants
-  - entity: sensor.lucas_planning_de_garde_periode_actuelle
+  - entity: sensor.lucas_current_period
     name: Période
   - type: custom:auto-entities
     card:
@@ -380,7 +385,7 @@ entities:
       title: "Détails"
     filter:
       include:
-        - entity_id: sensor.lucas_planning_de_garde_*
+        - entity_id: sensor.lucas_*
           attributes:
             - vacation_name
             - zone
@@ -412,12 +417,12 @@ automation:
     description: "Active le chauffage 2 jours avant l'arrivée"
     trigger:
       - platform: numeric_state
-        entity_id: sensor.lucas_planning_de_garde_jours_restants
+        entity_id: sensor.lucas_days_remaining
         below: 2.5
         above: 1.5
     condition:
       - condition: state
-        entity_id: binary_sensor.lucas_planning_de_garde_presence
+        entity_id: binary_sensor.lucas_presence
         state: "off"
     action:
       - service: climate.set_preset_mode

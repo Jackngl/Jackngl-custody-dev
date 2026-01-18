@@ -209,63 +209,37 @@ L'application utilise un **système automatique** basé sur :
 
 ## 📅 Règles de vacances détaillées
 
-### Système automatique basé sur `reference_year`
+### Système automatique basé sur `reference_year` + `vacation_split_mode`
 
-L'application détermine automatiquement quelle partie des vacances vous avez selon le champ `reference_year` :
+L'application détermine automatiquement :
+- **quelles années** vous avez des vacances (via `reference_year`)
+- **quelle moitié** vous avez cette année (via `vacation_split_mode`)
 
-#### 1. Première partie (`reference_year: "odd"`)
+#### 1. Années concernées (`reference_year`)
+- `reference_year: "odd"` → vous avez des vacances **les années impaires**
+- `reference_year: "even"` → vous avez des vacances **les années paires**
 
-**Fonctionnement** :
-- Garde la **première partie** des vacances pour **toutes les vacances scolaires**
-- **Uniquement en années impaires** (2025, 2027, ...)
-- Années paires : pas de garde (car c'est la 2ème partie, l'autre parent a la garde)
-- **Milieu calculé automatiquement** pour les règles de moitié : Date/heure exacte au milieu de la période effective
-- Début : Vendredi 16:15 (sortie d'école) ou samedi selon niveau
-- Fin : Milieu exact (pour moitié) ou Dimanche 19:00 (pour semaine)
-- **S'applique à** : Noël, Hiver, Printemps, Toussaint, Été (si aucune règle d'été spécifique)
+#### 2. Répartition des moitiés (`vacation_split_mode`)
+- `odd_first` : années impaires = **1ère moitié**, années paires = **2ème moitié**
+- `odd_second` : années impaires = **2ème moitié**, années paires = **1ère moitié**
 
-**Configuration Parent A** :
+#### Exemple (mode par défaut)
 ```yaml
 zone: "C"
-reference_year: "odd"  # 1ère partie en années impaires
+reference_year: "odd"
+vacation_split_mode: "odd_first"
 school_level: "primary"
 ```
 
-**Exemples pour Parent A** :
-- **Vacances de Noël 2025** (impaire) : ✅ 1ère moitié (19/12/2025 16:15 → 27/12/2025 17:37:30)
-- **Vacances d'Hiver 2025** (impaire) : ✅ 1ère moitié
-- **Vacances de Printemps 2025** (impaire) : ✅ 1ère moitié
-- **Vacances de la Toussaint 2025** (impaire) : ✅ 1ère moitié
-- **Vacances de Noël 2026** (paire) : ❌ Pas de garde (car c'est la 2ème partie, le parent B a la garde)
-
----
-
-#### 2. Deuxième partie (`reference_year: "even"`)
-
-**Fonctionnement** :
-- Garde la **deuxième partie** des vacances pour **toutes les vacances scolaires**
-- **Uniquement en années paires** (2024, 2026, ...)
-- Années impaires : pas de garde (car c'est la 1ère partie, l'autre parent a la garde)
-- **Milieu calculé automatiquement** pour les règles de moitié : Date/heure exacte au milieu de la période effective
-- Début : Milieu exact (pour moitié) ou début de la 2ème semaine
-- Fin : Dimanche 19:00 (fin officielle)
-- **S'applique à** : Noël, Hiver, Printemps, Toussaint, Été (si aucune règle d'été spécifique)
-
-**Configuration Parent B** :
+#### Exemple (inverse)
 ```yaml
 zone: "C"
-reference_year: "even"  # 2ème partie en années paires
+reference_year: "odd"
+vacation_split_mode: "odd_second"
 school_level: "primary"
 ```
 
-**Exemples pour Parent B** :
-- **Vacances de Noël 2025** (impaire) : ❌ Pas de garde (car c'est la 1ère partie, le parent A a la garde)
-- **Vacances de Noël 2026** (paire) : ✅ 2ème moitié (27/12/2026 17:37:30 → 03/01/2027 19:00)
-- **Vacances d'Hiver 2026** (paire) : ✅ 2ème moitié
-- **Vacances de Printemps 2026** (paire) : ✅ 2ème moitié
-- **Vacances de la Toussaint 2026** (paire) : ✅ 2ème moitié
-
----
+> **Note** : Le calcul du **milieu exact** reste identique (milieu = (début + fin) / 2).
 
 ### Calcul du milieu exact
 
@@ -492,7 +466,7 @@ L'application ajuste automatiquement les dates de l'API pour correspondre aux ho
 
 ### Calcul des dates
 
-Les dates sont calculées automatiquement selon la règle sélectionnée et la parité de l'année (définie par `reference_year`).
+Les dates sont calculées automatiquement selon la règle sélectionnée, la parité de l'année (`reference_year`) et la répartition des moitiés (`vacation_split_mode`).
 
 ---
 
@@ -534,7 +508,7 @@ school_level: "primary"
   - Printemps 2026 : 2ème moitié
   - Toussaint 2026 : 2ème moitié
 
-> **Note** : Cette logique s'applique à **toutes les vacances scolaires** (Noël, Hiver, Printemps, Toussaint, Été). Le champ `reference_year` détermine automatiquement quelle partie des vacances chaque parent a selon la parité de l'année.
+> **Note** : Cette logique s'applique à **toutes les vacances scolaires** (Noël, Hiver, Printemps, Toussaint, Été). Le champ `reference_year` détermine **les années concernées**, et `vacation_split_mode` détermine **la moitié**.
 
 **Variante inverse** (années impaires = 2ème moitié) :
 ```yaml
@@ -670,11 +644,10 @@ school_level: "primary"
 
 ### Les règles ne s'appliquent pas correctement
 
-1. **Reference_year** : Vérifiez que `reference_year` est correctement configuré (paire/impaire)
-   - `"odd"` (impaire) = 1ère partie (années impaires)
-   - `"even"` (paire) = 2ème partie (années paires)
-2. **Summer_rule** : Vérifiez que `summer_rule` est correctement configuré pour les vacances d'été
-3. **Logs** : Consultez les logs pour voir les dates calculées
+1. **reference_year** : Vérifiez que vous avez sélectionné les années concernées (paire / impaire)
+2. **vacation_split_mode** : Vérifiez si vous avez choisi la 1ère ou 2ème moitié pour les années impaires
+3. **july_rule / august_rule / summer_rule** : Vérifiez les règles d’été
+4. **Logs** : Consultez les logs pour voir les dates calculées
 
 ---
 

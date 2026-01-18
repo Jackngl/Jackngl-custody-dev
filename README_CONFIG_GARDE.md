@@ -77,7 +77,7 @@ L'application supporte **6 types de garde** pour les weekends et semaines :
 #### 1. **Type de garde** (`custody_type`)
 - **Description** : Définit le rythme de garde (weekends pairs, alternés, etc.)
 - **Valeurs** : Voir [Types de garde disponibles](#types-de-garde-disponibles)
-- **Exemple** : `"even_weekends"` pour les weekends semaines paires
+- **Exemple** : `"alternate_weekend"` pour les weekends des semaines paires/impaires
 
 #### 2. **Année de référence pour la garde classique** (`reference_year`)
 - **Description** : Année de référence pour déterminer la parité (paire ou impaire) pour la garde classique uniquement
@@ -380,12 +380,12 @@ Les événements de garde affichent automatiquement les extensions :
 
 ### Exemple 1 : Weekends pairs (configuration recommandée)
 
-**Situation** : Vous avez la garde tous les weekends des semaines paires, année de référence impaire.
+**Situation** : Vous avez la garde tous les weekends des semaines paires.
 
 ```yaml
 # Configuration
-custody_type: "even_weekends"
-reference_year: "odd"
+custody_type: "alternate_weekend"
+reference_year: "even"
 arrival_time: "16:15"      # Vendredi sortie école
 departure_time: "19:00"    # Dimanche soir
 school_level: "primary"
@@ -510,7 +510,7 @@ L'application utilise **deux masques de saisie distincts** :
   - `two_two_three` (rythme 2-2-3)
   - `two_two_five_five` (rythme 2-2-5-5)
   - `custom` (personnalisé)
-- ❌ **Non utilisé pour** : `even_weekends`, `odd_weekends`
+- ❌ **Non utilisé pour** : `alternate_weekend`, `alternate_week_parity`
   - Ces types utilisent la parité ISO des semaines
   - Le champ est masqué dans l'interface pour ces types
 
@@ -551,6 +551,6 @@ Pour toute question sur la configuration de la garde normale :
 
 ---
 
-**Dernière mise à jour** : Version 1.0.54
+**Dernière mise à jour** : Version 1.0.98
 
  
