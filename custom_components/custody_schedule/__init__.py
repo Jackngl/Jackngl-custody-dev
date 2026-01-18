@@ -19,6 +19,9 @@ from .const import (
     CONF_CHILD_NAME,
     CONF_CHILD_NAME_DISPLAY,
     CONF_HOLIDAY_API_URL,
+    CONF_REFERENCE_YEAR,
+    CONF_REFERENCE_YEAR_CUSTODY,
+    CONF_REFERENCE_YEAR_VACATIONS,
     DOMAIN,
     HOLIDAY_API,
     LOGGER,
@@ -47,6 +50,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     config = {**entry.data, **(entry.options or {})}
+    config = _migrate_reference_years(hass, entry, config)
     api_url = config.get(CONF_HOLIDAY_API_URL) or HOLIDAY_API
     
     # Store clients by API URL to support multiple entries with different API URLs
@@ -144,6 +148,25 @@ class CustodyScheduleCoordinator(DataUpdateCoordinator[CustodyComputation]):
                 },
             )
 
+
+def _migrate_reference_years(
+    hass: HomeAssistant, entry: ConfigEntry, config: dict[str, Any]
+) -> dict[str, Any]:
+    """Backfill split reference year keys from legacy config if needed."""
+    legacy = config.get(CONF_REFERENCE_YEAR)
+    custody_year = config.get(CONF_REFERENCE_YEAR_CUSTODY)
+    vacations_year = config.get(CONF_REFERENCE_YEAR_VACATIONS)
+
+    if legacy and (custody_year is None or vacations_year is None):
+        updated = dict(entry.data)
+        if custody_year is None:
+            updated[CONF_REFERENCE_YEAR_CUSTODY] = legacy
+        if vacations_year is None:
+            updated[CONF_REFERENCE_YEAR_VACATIONS] = legacy
+        hass.config_entries.async_update_entry(entry, data=updated)
+        return {**updated, **(entry.options or {})}
+
+    return config
 
 def _register_services(hass: HomeAssistant) -> None:
     """Register services exposed by the integration."""
