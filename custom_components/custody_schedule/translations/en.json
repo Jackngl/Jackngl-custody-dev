@@ -16,7 +16,7 @@
         "description": "Configure regular custody outside school holidays. Public holidays (Friday/Monday) automatically extend weekends. The cycle start day does not apply to ISO parity weekends/weeks.",
         "data": {
           "custody_type": "Custody type",
-          "reference_year": "Reference year for regular custody (even/odd)",
+          "reference_year_custody": "Reference year for regular custody (even/odd)",
           "start_day": "Cycle start day (weeks only)",
           "arrival_time": "Arrival time",
           "departure_time": "Departure time",
@@ -28,7 +28,7 @@
         "description": "Configure custody rules during school holidays. Vacations take priority over regular custody. Current year parity determines the applicable half.",
         "data": {
           "zone": "School zone",
-          "reference_year": "Reference year for vacations (even/odd)",
+          "reference_year_vacations": "Reference year for vacations (even/odd)",
           "vacation_split_mode": "Half split (even/odd years)",
           "school_level": "School level",
           "july_rule": "July rule",
@@ -59,6 +59,15 @@
         "title": "Custody Schedule Options",
         "description": "Choose what you want to modify."
       },
+      "custody": {
+        "title": "Regular custody (weekends/weeks)",
+        "description": "Edit regular custody outside school holidays. Public holidays extend weekends. The cycle start day does not apply to ISO parity weekends/weeks.",
+        "data": {
+          "custody_type": "Custody type",
+          "reference_year_custody": "Reference year for regular custody (even/odd)",
+          "start_day": "Cycle start day (weeks only)"
+        }
+      },
       "schedule": {
         "title": "Schedule and location",
         "description": "Modify arrival/departure times and exchange location.",
@@ -73,7 +82,7 @@
         "description": "Modify school zone and custody rules during vacations. Vacations take priority over regular custody. Current year parity determines the applicable half.",
         "data": {
           "zone": "School zone",
-          "reference_year": "Reference year for vacations (even/odd)",
+          "reference_year_vacations": "Reference year for vacations (even/odd)",
           "vacation_split_mode": "Half split (even/odd years)",
           "school_level": "School level",
           "july_rule": "July rule",

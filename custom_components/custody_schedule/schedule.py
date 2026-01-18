@@ -68,6 +68,8 @@ from .const import (
     CONF_LOCATION,
     CONF_NOTES,
     CONF_REFERENCE_YEAR,
+    CONF_REFERENCE_YEAR_CUSTODY,
+    CONF_REFERENCE_YEAR_VACATIONS,
     CONF_SCHOOL_LEVEL,
     CONF_START_DAY,
     CONF_SUMMER_RULE,
@@ -430,7 +432,9 @@ class CustodyScheduleManager:
             holidays = get_french_holidays(now.year) | get_french_holidays(now.year + 1)
             
             # Get reference_year to determine parity (even = even weeks, odd = odd weeks)
-            reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+            reference_year = self._config.get(
+                CONF_REFERENCE_YEAR_CUSTODY, self._config.get(CONF_REFERENCE_YEAR, "even")
+            )
             target_parity = 0 if reference_year == "even" else 1  # 0 = even, 1 = odd
             
             # Ajuster le pointer pour commencer avant ou à la date actuelle
@@ -506,7 +510,9 @@ class CustodyScheduleManager:
             holidays = get_french_holidays(now.year) | get_french_holidays(now.year + 1)
             
             # Get reference_year to determine parity (even = even weeks, odd = odd weeks)
-            reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+            reference_year = self._config.get(
+                CONF_REFERENCE_YEAR_CUSTODY, self._config.get(CONF_REFERENCE_YEAR, "even")
+            )
             target_parity = 0 if reference_year == "even" else 1  # 0 = even, 1 = odd
             
             # Ajuster le pointer pour commencer avant ou à la date actuelle
@@ -651,7 +657,9 @@ class CustodyScheduleManager:
 
             # Automatic vacation rule based on year parity + split mode
             # Get reference_year to determine which parent gets vacations this year
-            reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+            reference_year = self._config.get(
+                CONF_REFERENCE_YEAR_VACATIONS, self._config.get(CONF_REFERENCE_YEAR, "even")
+            )
             split_mode = self._config.get(CONF_VACATION_SPLIT_MODE, "odd_first")
             is_even_year = start.year % 2 == 0
             
@@ -746,7 +754,9 @@ class CustodyScheduleManager:
                 # Juillet complet selon reference_year (pair/impair)
                 if start.month != 7 and end.month != 7:
                     continue
-                reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+                reference_year = self._config.get(
+                    CONF_REFERENCE_YEAR_VACATIONS, self._config.get(CONF_REFERENCE_YEAR, "even")
+                )
                 # reference_year "even" = années paires, "odd" = années impaires
                 is_target_year = (start.year % 2 == 0) if reference_year == "even" else (start.year % 2 == 1)
                 if not is_target_year:
@@ -758,7 +768,9 @@ class CustodyScheduleManager:
                 # Août complet selon reference_year (pair/impair)
                 if start.month != 8 and end.month != 8:
                     continue
-                reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+                reference_year = self._config.get(
+                    CONF_REFERENCE_YEAR_VACATIONS, self._config.get(CONF_REFERENCE_YEAR, "even")
+                )
                 # reference_year "even" = années paires, "odd" = années impaires
                 is_target_year = (start.year % 2 == 0) if reference_year == "even" else (start.year % 2 == 1)
                 if not is_target_year:
@@ -855,7 +867,9 @@ class CustodyScheduleManager:
             # 1ère moitié de juillet (1-15 juillet) selon reference_year
             # reference_year='even': années impaires seulement
             # reference_year='odd': années paires seulement
-            reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+            reference_year = self._config.get(
+                CONF_REFERENCE_YEAR_VACATIONS, self._config.get(CONF_REFERENCE_YEAR, "even")
+            )
             should_apply = (reference_year == "even" and not is_even_year) or (reference_year == "odd" and is_even_year)
             
             if should_apply:
@@ -876,7 +890,9 @@ class CustodyScheduleManager:
             # 2ème moitié de juillet (16-31 juillet) selon reference_year
             # reference_year='even': années paires seulement
             # reference_year='odd': années impaires seulement
-            reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+            reference_year = self._config.get(
+                CONF_REFERENCE_YEAR_VACATIONS, self._config.get(CONF_REFERENCE_YEAR, "even")
+            )
             should_apply = (reference_year == "even" and is_even_year) or (reference_year == "odd" and not is_even_year)
             
             if should_apply:
@@ -897,7 +913,9 @@ class CustodyScheduleManager:
             # 1ère moitié d'août (1-15 août) selon reference_year
             # reference_year='even': années impaires seulement
             # reference_year='odd': années paires seulement
-            reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+            reference_year = self._config.get(
+                CONF_REFERENCE_YEAR_VACATIONS, self._config.get(CONF_REFERENCE_YEAR, "even")
+            )
             should_apply = (reference_year == "even" and not is_even_year) or (reference_year == "odd" and is_even_year)
             
             if should_apply:
@@ -918,7 +936,9 @@ class CustodyScheduleManager:
             # 2ème moitié d'août (16-31 août) selon reference_year
             # reference_year='even': années paires seulement
             # reference_year='odd': années impaires seulement
-            reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+            reference_year = self._config.get(
+                CONF_REFERENCE_YEAR_VACATIONS, self._config.get(CONF_REFERENCE_YEAR, "even")
+            )
             should_apply = (reference_year == "even" and is_even_year) or (reference_year == "odd" and not is_even_year)
             
             if should_apply:
@@ -962,7 +982,9 @@ class CustodyScheduleManager:
     def _reference_start(self, now: datetime, custody_type: str) -> datetime:
         """Return the datetime used as anchor for the cycle."""
         reference_year = now.year
-        desired = self._config.get(CONF_REFERENCE_YEAR, "even")
+        desired = self._config.get(
+            CONF_REFERENCE_YEAR_CUSTODY, self._config.get(CONF_REFERENCE_YEAR, "even")
+        )
         if desired == "even" and reference_year % 2 != 0:
             reference_year -= 1
         elif desired == "odd" and reference_year % 2 == 0:
@@ -1151,7 +1173,9 @@ class CustodyScheduleManager:
             )
 
         # vacation_rule is now automatic based on reference_year + split mode
-        reference_year = self._config.get(CONF_REFERENCE_YEAR, "even")
+        reference_year = self._config.get(
+            CONF_REFERENCE_YEAR_VACATIONS, self._config.get(CONF_REFERENCE_YEAR, "even")
+        )
         split_mode = self._config.get(CONF_VACATION_SPLIT_MODE, "odd_first")
         summer_rule = self._config.get(CONF_SUMMER_RULE) if self._config.get(CONF_SUMMER_RULE) in SUMMER_RULES else None
 

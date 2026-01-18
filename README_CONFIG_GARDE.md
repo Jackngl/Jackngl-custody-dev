@@ -79,14 +79,14 @@ L'application supporte **6 types de garde** pour les weekends et semaines :
 - **Valeurs** : Voir [Types de garde disponibles](#types-de-garde-disponibles)
 - **Exemple** : `"alternate_weekend"` pour les weekends des semaines paires/impaires
 
-#### 2. **Année de référence pour la garde classique** (`reference_year`)
+#### 2. **Année de référence pour la garde classique** (`reference_year_custody`)
 - **Description** : Année de référence pour déterminer la parité (paire ou impaire) pour la garde classique uniquement
 - **Valeurs** :
   - `"even"` : Année paire (2024, 2026, ...)
   - `"odd"` : Année impaire (2025, 2027, ...)
 - **Utilisation** : Détermine quel parent a la garde classique selon la parité de l'année
 - **Exemple** : Si `"odd"` et que nous sommes en 2025 (impaire), vous avez la garde classique
-- **Note** : Ce `reference_year` est **indépendant** du `reference_year` configuré dans le masque "Vacances scolaires". Chaque masque a son propre `reference_year`.
+- **Note** : Ce `reference_year_custody` est **indépendant** du `reference_year_vacations` configuré dans le masque "Vacances scolaires". Chaque masque a son propre champ.
 
 #### 3. **Heure d'arrivée** (`arrival_time`)
 - **Description** : Heure à laquelle vous récupérez l'enfant
@@ -107,7 +107,7 @@ L'application supporte **6 types de garde** pour les weekends et semaines :
 - **Valeurs** : `"monday"`, `"tuesday"`, `"wednesday"`, `"thursday"`, `"friday"`, `"saturday"`, `"sunday"`
 - **Utilisation** : 
   - ✅ **Utilisé pour** : `alternate_week`, `two_two_three`, `two_two_five_five`, `custom`
-  - ❌ **Non utilisé pour** : `alternate_weekend`, `alternate_week_parity` (basé sur la parité ISO via `reference_year`)
+- ❌ **Non utilisé pour** : `alternate_weekend`, `alternate_week_parity` (basé sur la parité ISO via `reference_year_custody`)
 - **Défaut** : `"monday"`
 - **Note** : Pour les week-ends/semaines parité ISO, le cycle est **toujours ancré au lundi** (champ masqué dans l'interface)
 
@@ -132,27 +132,27 @@ L'application supporte **6 types de garde** pour les weekends et semaines :
 
 **Fonctionnement** :
 - Garde selon la **parité ISO des semaines** (paires ou impaires)
-- La parité est déterminée par le champ `reference_year` :
-  - `reference_year: "even"` → garde les weekends des semaines ISO **paires** (S2, S4, S6, S8, ...)
-  - `reference_year: "odd"` → garde les weekends des semaines ISO **impaires** (S1, S3, S5, S7, ...)
+- La parité est déterminée par le champ `reference_year_custody` :
+  - `reference_year_custody: "even"` → garde les weekends des semaines ISO **paires** (S2, S4, S6, S8, ...)
+  - `reference_year_custody: "odd"` → garde les weekends des semaines ISO **impaires** (S1, S3, S5, S7, ...)
 - Basé sur le numéro ISO de la semaine (pas sur un cycle personnalisé)
 - **Le champ "Jour de départ du cycle" n'est pas utilisé** (masqué dans l'interface)
 
 **Configuration** :
 ```yaml
 custody_type: "alternate_weekend"
-reference_year: "even"  # "even" = weekends semaines paires, "odd" = weekends semaines impaires
+reference_year_custody: "even"  # "even" = weekends semaines paires, "odd" = weekends semaines impaires
 arrival_time: "16:15"  # Vendredi sortie école
 departure_time: "19:00"  # Dimanche soir
 # start_day n'est pas utilisé pour ce type
 ```
 
-**Exemple** (`reference_year: "even"` = weekends semaines paires) :
+**Exemple** (`reference_year_custody: "even"` = weekends semaines paires) :
 - Semaine ISO 18 (paire) → ✅ Garde
 - Semaine ISO 19 (impaire) → ❌ Pas de garde
 - Semaine ISO 20 (paire) → ✅ Garde
 
-**Calendrier type (Mai 2025, `reference_year: "even"`)** :
+**Calendrier type (Mai 2025, `reference_year_custody: "even"`)** :
 - ✅ S18 : Ven 02/05 16:15 → Dim 04/05 19:00
 - ❌ S19 : Pas de garde
 - ✅ S20 : Ven 16/05 16:15 → Dim 18/05 19:00
@@ -171,7 +171,7 @@ departure_time: "19:00"  # Dimanche soir
 **Configuration** :
 ```yaml
 custody_type: "alternate_week"
-reference_year: "even"
+reference_year_custody: "even"
 start_day: "monday"  # Début de la semaine de garde
 arrival_time: "08:00"
 departure_time: "19:00"
@@ -188,21 +188,21 @@ departure_time: "19:00"
 
 **Fonctionnement** :
 - Garde selon la **parité ISO des semaines** (paires ou impaires)
-- La parité est déterminée par le champ `reference_year` :
-  - `reference_year: "even"` → garde les semaines ISO **paires**
-  - `reference_year: "odd"` → garde les semaines ISO **impaires**
+- La parité est déterminée par le champ `reference_year_custody` :
+  - `reference_year_custody: "even"` → garde les semaines ISO **paires**
+  - `reference_year_custody: "odd"` → garde les semaines ISO **impaires**
 - Cycle : 7 jours (une semaine complète)
 - **Ne nécessite pas** le champ `start_day` (basé sur la parité ISO)
 
 **Configuration** :
 ```yaml
 custody_type: "alternate_week_parity"
-reference_year: "even"  # "even" = semaines paires, "odd" = semaines impaires
+reference_year_custody: "even"  # "even" = semaines paires, "odd" = semaines impaires
 arrival_time: "08:00"
 departure_time: "19:00"
 ```
 
-**Exemple de cycle** (`reference_year: "even"` = semaines paires) :
+**Exemple de cycle** (`reference_year_custody: "even"` = semaines paires) :
 - Semaine ISO 2 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
 - Semaine ISO 3 : ❌ Pas de garde
 - Semaine ISO 4 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
@@ -210,7 +210,7 @@ departure_time: "19:00"
 
 **Différence avec `alternate_week`** :
 - `alternate_week` : Basé sur une date de référence et un cycle de 14 jours (1 semaine sur 2)
-- `alternate_week_parity` : Basé sur la parité ISO des semaines (toutes les semaines paires ou impaires selon `reference_year`)
+- `alternate_week_parity` : Basé sur la parité ISO des semaines (toutes les semaines paires ou impaires selon `reference_year_custody`)
 
 ---
 
@@ -224,7 +224,7 @@ departure_time: "19:00"
 **Configuration** :
 ```yaml
 custody_type: "two_two_three"
-reference_year: "even"
+reference_year_custody: "even"
 start_day: "monday"  # Jour de départ du cycle
 arrival_time: "08:00"
 departure_time: "19:00"
@@ -261,7 +261,7 @@ Semaine 2 :
 **Configuration** :
 ```yaml
 custody_type: "two_two_five_five"
-reference_year: "even"
+reference_year_custody: "even"
 start_day: "monday"  # Jour de départ du cycle
 arrival_time: "08:00"
 departure_time: "19:00"
@@ -363,7 +363,7 @@ Les événements de garde affichent automatiquement les extensions :
 
 ## 📊 Tableau récapitulatif des types de garde
 
-| Type | Cycle | Utilise start_day | Utilise reference_year | Jours fériés |
+| Type | Cycle | Utilise start_day | Utilise reference_year_custody | Jours fériés |
 |------|-------|-------------------|------------------------|--------------|
 | `alternate_week` | 14 jours | ✅ Oui | ✅ Oui | ❌ Non |
 | `alternate_week_parity` | 7 jours | ❌ Non | ✅ Oui (détermine parité) | ✅ Oui |
@@ -372,7 +372,7 @@ Les événements de garde affichent automatiquement les extensions :
 | `two_two_five_five` | 14 jours | ✅ Oui | ✅ Oui | ❌ Non |
 | `custom` | Variable | ✅ Oui | ✅ Oui | ❌ Non |
 
-**Note** : Les types de garde basés sur la parité ISO (`alternate_weekend`, `alternate_week_parity`) utilisent `reference_year` pour déterminer la parité (pair/impair) et bénéficient de l'extension automatique avec les jours fériés, **uniquement hors vacances scolaires**.
+**Note** : Les types de garde basés sur la parité ISO (`alternate_weekend`, `alternate_week_parity`) utilisent `reference_year_custody` pour déterminer la parité (pair/impair) et bénéficient de l'extension automatique avec les jours fériés, **uniquement hors vacances scolaires**.
 
 ---
 
@@ -385,7 +385,7 @@ Les événements de garde affichent automatiquement les extensions :
 ```yaml
 # Configuration
 custody_type: "alternate_weekend"
-reference_year: "even"
+reference_year_custody: "even"
 arrival_time: "16:15"      # Vendredi sortie école
 departure_time: "19:00"    # Dimanche soir
 school_level: "primary"
@@ -406,7 +406,7 @@ location: "École élémentaire"
 ```yaml
 # Configuration
 custody_type: "alternate_week"
-reference_year: "even"
+reference_year_custody: "even"
 start_day: "monday"
 arrival_time: "08:00"      # Lundi matin
 departure_time: "19:00"    # Dimanche soir
@@ -425,7 +425,7 @@ school_level: "primary"
 ```yaml
 # Configuration
 custody_type: "two_two_three"
-reference_year: "even"
+reference_year_custody: "even"
 start_day: "monday"
 arrival_time: "08:00"
 departure_time: "19:00"
@@ -446,7 +446,7 @@ school_level: "primary"
 ```yaml
 # Configuration
 custody_type: "two_two_five_five"
-reference_year: "even"
+reference_year_custody: "even"
 start_day: "monday"
 arrival_time: "08:00"
 departure_time: "19:00"
@@ -471,7 +471,7 @@ school_level: "primary"
 L'application utilise **deux masques de saisie distincts** :
 
 1. **Masque "Garde classique"** :
-   - Type de garde (alternate_week, even_weekends, etc.)
+   - Type de garde (alternate_week, alternate_weekend, etc.)
    - Année de référence
    - Horaires d'arrivée/départ
    - Jour de départ du cycle
@@ -551,6 +551,6 @@ Pour toute question sur la configuration de la garde normale :
 
 ---
 
-**Dernière mise à jour** : Version 1.0.98
+**Dernière mise à jour** : Version 1.0.99
 
  

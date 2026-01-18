@@ -30,6 +30,8 @@ from .const import (
     CONF_NOTIFICATIONS,
     CONF_PHOTO,
     CONF_REFERENCE_YEAR,
+    CONF_REFERENCE_YEAR_CUSTODY,
+    CONF_REFERENCE_YEAR_VACATIONS,
     CONF_SCHOOL_LEVEL,
     CONF_START_DAY,
     CONF_SUMMER_RULE,
@@ -348,12 +350,15 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         # start_day is only relevant for custody types that use cycles (not alternate_weekend/alternate_week_parity)
         show_start_day = custody_type not in ("alternate_weekend", "alternate_week_parity")
         
+        reference_year_default = self._data.get(
+            CONF_REFERENCE_YEAR_CUSTODY, self._data.get(CONF_REFERENCE_YEAR, "even")
+        )
         schema_dict = {
             vol.Required(
                 CONF_CUSTODY_TYPE, default=custody_type
             ): _custody_type_selector(),
             vol.Required(
-                CONF_REFERENCE_YEAR, default=self._data.get(CONF_REFERENCE_YEAR, "even")
+                CONF_REFERENCE_YEAR_CUSTODY, default=reference_year_default
             ): _reference_year_selector(),
             vol.Required(
                 CONF_ARRIVAL_TIME, default=self._data.get(CONF_ARRIVAL_TIME, "08:00")
@@ -393,13 +398,15 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         august_rule_default = self._data.get(CONF_AUGUST_RULE) or ""
         # Get reference_year for vacations (separate from custody reference_year)
         # Default to "even" if not set
-        reference_year_default = self._data.get(CONF_REFERENCE_YEAR, "even")
+        reference_year_default = self._data.get(
+            CONF_REFERENCE_YEAR_VACATIONS, self._data.get(CONF_REFERENCE_YEAR, "even")
+        )
         vacation_split_default = self._data.get(CONF_VACATION_SPLIT_MODE, "odd_first")
         
         schema = vol.Schema(
             {
                 vol.Required(CONF_ZONE, default=self._data.get(CONF_ZONE, "A")): _zone_selector(),
-                vol.Required(CONF_REFERENCE_YEAR, default=reference_year_default): _reference_year_selector(),
+                vol.Required(CONF_REFERENCE_YEAR_VACATIONS, default=reference_year_default): _reference_year_selector(),
                 vol.Optional(CONF_VACATION_SPLIT_MODE, default=vacation_split_default): _vacation_split_selector(),
                 vol.Optional(
                     CONF_SCHOOL_LEVEL, default=self._data.get(CONF_SCHOOL_LEVEL, "primary")
@@ -522,12 +529,15 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         # start_day is only relevant for custody types that use cycles (not alternate_weekend/alternate_week_parity)
         show_start_day = custody_type not in ("alternate_weekend", "alternate_week_parity")
         
+        reference_year_default = data.get(
+            CONF_REFERENCE_YEAR_CUSTODY, data.get(CONF_REFERENCE_YEAR, "even")
+        )
         schema_dict = {
             vol.Required(
                 CONF_CUSTODY_TYPE, default=custody_type
             ): _custody_type_selector(),
             vol.Required(
-                CONF_REFERENCE_YEAR, default=data.get(CONF_REFERENCE_YEAR, "even")
+                CONF_REFERENCE_YEAR_CUSTODY, default=reference_year_default
             ): _reference_year_selector(),
         }
         
@@ -583,13 +593,15 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         july_rule_default = data.get(CONF_JULY_RULE) or ""
         august_rule_default = data.get(CONF_AUGUST_RULE) or ""
         # Get reference_year for vacations (separate from custody reference_year)
-        reference_year_default = data.get(CONF_REFERENCE_YEAR, "even")
+        reference_year_default = data.get(
+            CONF_REFERENCE_YEAR_VACATIONS, data.get(CONF_REFERENCE_YEAR, "even")
+        )
         vacation_split_default = data.get(CONF_VACATION_SPLIT_MODE, "odd_first")
         
         schema = vol.Schema(
             {
                 vol.Required(CONF_ZONE, default=data.get(CONF_ZONE, "A")): _zone_selector(),
-                vol.Required(CONF_REFERENCE_YEAR, default=reference_year_default): _reference_year_selector(),
+                vol.Required(CONF_REFERENCE_YEAR_VACATIONS, default=reference_year_default): _reference_year_selector(),
                 vol.Optional(CONF_VACATION_SPLIT_MODE, default=vacation_split_default): _vacation_split_selector(),
                 vol.Optional(
                     CONF_SCHOOL_LEVEL, default=data.get(CONF_SCHOOL_LEVEL, "primary")
