@@ -39,6 +39,7 @@ class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntit
     def __init__(self, coordinator: CustodyScheduleCoordinator, entry: ConfigEntry, child_name: str) -> None:
         super().__init__(coordinator)
         self._entry = entry
+        self._child_name = child_name
         self._attr_name = f"{child_name} Calendrier"
         self._attr_unique_id = f"{entry.entry_id}_calendar"
         self._attr_device_info = None
@@ -87,10 +88,11 @@ class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntit
             description = f"{window.label} • Source: {window.source}"
         
         location = self.coordinator.data.attributes.get(CONF_LOCATION) if self.coordinator.data else None
+        summary = f"{self._child_name} • {window.label}".strip()
         return CalendarEvent(
             start=window.start,
             end=window.end,
-            summary=window.label,
+            summary=summary,
             description=description,
             location=location,
         )
