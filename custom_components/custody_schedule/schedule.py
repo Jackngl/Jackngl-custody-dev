@@ -401,10 +401,9 @@ class CustodyScheduleManager:
         This implements the priority rule: vacations override weekends/weeks.
         Vacation periods completely replace normal custody rules.
         
-        IMPORTANT: Only filter windows that overlap with actual vacation custody windows,
-        not filter windows. Filter windows are used to prevent pattern windows during
-        the full vacation period, but we should only filter if there's an actual overlap
-        with a real vacation custody window.
+        IMPORTANT: Always filter using the full vacation period (vacation_filter),
+        because vacations override regular custody for all parents, even if the
+        custody vacation segment is assigned to the other parent.
         
         Args:
             pattern_windows: Normal weekend/week windows from custody_type
@@ -416,15 +415,11 @@ class CustodyScheduleManager:
         if not vacation_windows:
             return pattern_windows
         
-        # Build a list of vacation periods (start, end) for quick overlap checking
-        # IMPORTANT: Only use actual vacation custody windows, NOT filter windows
-        # Filter windows are too broad and can incorrectly filter weekends that don't
-        # actually overlap with the user's vacation custody period
-        vacation_periods = [(vw.start, vw.end) for vw in vacation_windows if vw.source != "vacation_filter"]
-        
-        # If no actual vacation custody windows, don't filter anything
+        # Build a list of vacation periods (start, end) for quick overlap checking.
+        # Use full vacation filter windows when available to enforce priority.
+        vacation_periods = [(vw.start, vw.end) for vw in vacation_windows if vw.source == "vacation_filter"]
         if not vacation_periods:
-            return pattern_windows
+            vacation_periods = [(vw.start, vw.end) for vw in vacation_windows]
         
         filtered = []
         for pattern_window in pattern_windows:
