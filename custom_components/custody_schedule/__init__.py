@@ -255,7 +255,7 @@ def _normalize_event_datetime(value: Any) -> str | None:
     if isinstance(value, datetime):
         return value.isoformat()
     if isinstance(value, date):
-        return datetime.combine(value, datetime.min.time()).isoformat()
+        return datetime.combine(value, datetime.min.time(), tzinfo=dt_util.DEFAULT_TIME_ZONE).isoformat()
     if isinstance(value, str):
         parsed = dt_util.parse_datetime(value)
         if parsed:
@@ -264,8 +264,14 @@ def _normalize_event_datetime(value: Any) -> str | None:
             parsed_date = date.fromisoformat(value)
         except ValueError:
             return None
-        return datetime.combine(parsed_date, datetime.min.time()).isoformat()
+        return datetime.combine(parsed_date, datetime.min.time(), tzinfo=dt_util.DEFAULT_TIME_ZONE).isoformat()
     return None
+
+
+def _ensure_local_tz(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
+    return dt_util.as_local(value)
 
 
 def _calendar_marker(entry_id: str) -> str:
@@ -363,8 +369,8 @@ async def _sync_calendar_events(
         if window.end < start_range or window.start > end_range:
             continue
         summary = f"{child_label} - {window.label}".strip()
-        start_val = window.start.isoformat()
-        end_val = window.end.isoformat()
+        start_val = _ensure_local_tz(window.start).isoformat()
+        end_val = _ensure_local_tz(window.end).isoformat()
         key = _event_key(summary, start_val, end_val)
         desired_keys.add(key)
         if key not in existing_keys:
