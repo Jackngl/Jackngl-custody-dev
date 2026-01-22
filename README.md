@@ -1,6 +1,6 @@
 # 👨‍👩‍👧‍👦 Planning de garde (Custody Schedule)
 
-![Version](https://img.shields.io/badge/version-1.0.108-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 
@@ -548,11 +548,13 @@ Les résultats sont disponibles dans les logs Home Assistant (Paramètres → Sy
 - [x] URL API personnalisable
 - [x] Service de test API
 
-### v1.1 (à venir)
+
+
+### v1.1 (en cours)
 - [ ] Calendrier avancé avec vue mensuelle
-- [ ] Synchronisation Google Calendar
+- [x] Synchronisation Google Calendar
 - [ ] Notifications natives Home Assistant
-- [ ] Gestion d'exceptions avancée
+- [x] Gestion d'exceptions avancée
 - [ ] Export PDF du planning
 
 ### v1.2 (à venir)
