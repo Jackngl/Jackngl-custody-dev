@@ -447,6 +447,20 @@ async def _sync_calendar_events(
             updated,
             deleted,
         )
+        LOGGER.info(
+            "Calendar sync result for %s: existing=%d desired=%d created=%d updated=%d deleted=%d",
+            target,
+            len(existing_events),
+            len(desired_keys),
+            created,
+            updated,
+            deleted,
+        )
+        if created == 0 and updated == 0 and deleted == 0:
+            LOGGER.info(
+                "Calendar sync for %s did not require changes (entries already aligned).",
+                target,
+            )
 
 
 def _migrate_reference_years(
@@ -688,6 +702,7 @@ def _register_services(hass: HomeAssistant) -> None:
         child_label = config.get(CONF_CHILD_NAME_DISPLAY, config.get(CONF_CHILD_NAME, ""))
         summary_prefix = f"{child_label} - " if child_label else ""
         deleted = 0
+        matched = 0
         if hass.services.has_service("calendar", "delete_event"):
             for event in events:
                 if not isinstance(event, dict):
@@ -699,6 +714,7 @@ def _register_services(hass: HomeAssistant) -> None:
                         matches = summary.startswith(summary_prefix)
                     if not matches:
                         continue
+                matched += 1
                 event_id = event.get("uid") or event.get("id") or event.get("event_id")
                 if not event_id:
                     continue
@@ -718,6 +734,12 @@ def _register_services(hass: HomeAssistant) -> None:
             include_unmarked,
             days,
         )
+        if deleted == 0:
+            LOGGER.info(
+                "Purge completed with no deletions (matched=%d, events=%d).",
+                matched,
+                len(events),
+            )
 
     hass.services.async_register(
         DOMAIN,
