@@ -88,6 +88,9 @@ purge_calendar_events:
     match_text:
       description: Supprime les événements contenant ce texte dans le résumé.
       example: "Sarah-Léa"
+    debug:
+      description: Active les logs détaillés pour diagnostiquer les correspondances.
+      default: false
     purge_all:
       description: Supprime tous les événements dans la fenêtre sélectionnée (dangereux).
       default: false

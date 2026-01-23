@@ -101,6 +101,25 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unload_ok
 
 
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Handle entry removal by purging synced calendar events."""
+    config = {**entry.data, **(entry.options or {})}
+    child_label = config.get(CONF_CHILD_NAME_DISPLAY, config.get(CONF_CHILD_NAME, ""))
+    match_text = child_label or ""
+    await _async_purge_calendar_events(
+        hass,
+        entry.entry_id,
+        config,
+        include_unmarked=True,
+        purge_all=False,
+        days=3650,
+        match_text=match_text,
+        debug=True,
+        raise_on_error=False,
+        log_context="entry removal",
+    )
+
+
 def _apply_manual_exceptions(manager: CustodyScheduleManager, config: dict[str, Any]) -> None:
     exceptions = config.get(CONF_EXCEPTIONS_LIST)
     if isinstance(exceptions, list) and exceptions:
@@ -463,6 +482,214 @@ async def _sync_calendar_events(
             )
 
 
+async def _async_purge_calendar_events(
+    hass: HomeAssistant,
+    entry_id: str,
+    config: dict[str, Any],
+    *,
+    include_unmarked: bool,
+    purge_all: bool,
+    days: int | None,
+    match_text: str | None,
+    debug: bool,
+    raise_on_error: bool,
+    log_context: str | None = None,
+) -> tuple[int, int, int]:
+    context = f" ({log_context})" if log_context else ""
+    target = _normalize_calendar_target(config.get(CONF_CALENDAR_TARGET))
+    if not target:
+        message = "No target calendar configured"
+        if raise_on_error:
+            raise HomeAssistantError(message)
+        LOGGER.warning("Calendar purge skipped%s: %s", context, message)
+        return 0, 0, 0
+    if not hass.services.has_service("calendar", "get_events"):
+        message = "calendar.get_events not available"
+        if raise_on_error:
+            raise HomeAssistantError(message)
+        LOGGER.warning("Calendar purge skipped%s: %s", context, message)
+        return 0, 0, 0
+
+    now = dt_util.now()
+    if days is None:
+        days = config.get(CONF_CALENDAR_SYNC_DAYS, 120)
+    try:
+        days = int(days)
+    except (TypeError, ValueError):
+        days = 120
+    days = max(7, min(3650, days))
+    start_range = _ensure_local_tz(now - timedelta(days=1))
+    end_range = _ensure_local_tz(now + timedelta(days=days))
+
+    response = await hass.services.async_call(
+        "calendar",
+        "get_events",
+        {
+            "entity_id": target,
+            "start_date_time": start_range.isoformat(),
+            "end_date_time": end_range.isoformat(),
+        },
+        blocking=True,
+        return_response=True,
+    )
+
+    events: list[Any] = []
+    if isinstance(response, list):
+        events = response
+    elif isinstance(response, dict):
+        if "events" in response:
+            events = response.get("events") or []
+        elif target in response:
+            target_payload = response.get(target)
+            if isinstance(target_payload, dict) and "events" in target_payload:
+                events = target_payload.get("events") or []
+            elif isinstance(target_payload, list):
+                events = target_payload
+
+    marker = _calendar_marker(entry_id)
+    child_label = config.get(CONF_CHILD_NAME_DISPLAY, config.get(CONF_CHILD_NAME, ""))
+    summary_prefix = f"{child_label} - " if child_label else ""
+    match_text = str(match_text or "").strip()
+    match_text_lower = match_text.lower() if match_text else ""
+    child_label_lower = child_label.lower() if child_label else ""
+    deleted = 0
+    matched = 0
+    missing_id = 0
+    can_delete = hass.services.has_service("calendar", "delete_event")
+    if not can_delete:
+        LOGGER.warning("Calendar purge cannot delete events%s: calendar.delete_event not available", context)
+
+    def _truncate(value: str, limit: int = 120) -> str:
+        value = value.replace("\n", " ").strip()
+        return value if len(value) <= limit else f"{value[:limit]}..."
+
+    stats = {
+        "with_summary": 0,
+        "with_description": 0,
+        "with_event_id": 0,
+        "marker": 0,
+        "legacy": 0,
+        "prefix": 0,
+        "label": 0,
+        "text": 0,
+    }
+    debug_matches: list[str] = []
+    debug_misses: list[str] = []
+
+    for event in events:
+        if not isinstance(event, dict):
+            continue
+        summary = event.get("summary") or event.get("message") or ""
+        description = event.get("description") or ""
+        event_id = event.get("uid") or event.get("id") or event.get("event_id")
+        if summary:
+            stats["with_summary"] += 1
+        if description:
+            stats["with_description"] += 1
+        if event_id:
+            stats["with_event_id"] += 1
+
+        marker_match = bool(marker and marker in description)
+        legacy_match = "Planning de garde" in description
+        prefix_match = bool(include_unmarked and summary_prefix and summary.startswith(summary_prefix))
+        label_match = bool(include_unmarked and child_label_lower and child_label_lower in summary.lower())
+        text_match = bool(match_text_lower and match_text_lower in summary.lower())
+
+        if marker_match:
+            stats["marker"] += 1
+        if legacy_match:
+            stats["legacy"] += 1
+        if prefix_match:
+            stats["prefix"] += 1
+        if label_match:
+            stats["label"] += 1
+        if text_match:
+            stats["text"] += 1
+
+        if purge_all:
+            matches = True
+        else:
+            matches = marker_match or legacy_match or prefix_match or label_match or text_match
+
+        if matches:
+            matched += 1
+            if not event_id:
+                missing_id += 1
+                if debug and len(debug_matches) < 10:
+                    debug_matches.append(
+                        f"summary='{_truncate(summary)}' id=None desc='{_truncate(description)}'"
+                    )
+                continue
+            if debug and len(debug_matches) < 10:
+                debug_matches.append(
+                    f"summary='{_truncate(summary)}' id='{event_id}' "
+                    f"marker={marker_match} legacy={legacy_match} prefix={prefix_match} "
+                    f"label={label_match} text={text_match} desc='{_truncate(description)}'"
+                )
+            if can_delete:
+                await hass.services.async_call(
+                    "calendar",
+                    "delete_event",
+                    {"entity_id": target, "event_id": event_id},
+                    blocking=True,
+                )
+                deleted += 1
+        else:
+            if debug and len(debug_misses) < 10:
+                debug_misses.append(
+                    f"summary='{_truncate(summary)}' id='{event_id}' "
+                    f"marker={marker_match} legacy={legacy_match} prefix={prefix_match} "
+                    f"label={label_match} text={text_match}"
+                )
+
+    LOGGER.info(
+        "Purged %d custody events from %s (purge_all=%s, include_unmarked=%s, days=%s, match_text=%s)%s",
+        deleted,
+        target,
+        purge_all,
+        include_unmarked,
+        days,
+        match_text if match_text else None,
+        context,
+    )
+    if deleted == 0:
+        LOGGER.info(
+            "Purge completed with no deletions (matched=%d, events=%d).%s",
+            matched,
+            len(events),
+            context,
+        )
+    if missing_id:
+        LOGGER.info("Purge skipped %d matched events without ids.%s", missing_id, context)
+    if not can_delete and matched:
+        LOGGER.warning(
+            "Purge found %d matching events but cannot delete them%s.",
+            matched,
+            context,
+        )
+    if debug:
+        LOGGER.info(
+            "Purge debug%s: total=%d summary=%d desc=%d ids=%d marker=%d legacy=%d "
+            "prefix=%d label=%d text=%d",
+            context,
+            len(events),
+            stats["with_summary"],
+            stats["with_description"],
+            stats["with_event_id"],
+            stats["marker"],
+            stats["legacy"],
+            stats["prefix"],
+            stats["label"],
+            stats["text"],
+        )
+        for line in debug_matches:
+            LOGGER.info("Purge debug match%s: %s", context, line)
+        for line in debug_misses:
+            LOGGER.info("Purge debug miss%s: %s", context, line)
+
+    return deleted, matched, len(events)
+
+
 def _migrate_reference_years(
     hass: HomeAssistant, entry: ConfigEntry, config: dict[str, Any]
 ) -> dict[str, Any]:
@@ -655,101 +882,23 @@ def _register_services(hass: HomeAssistant) -> None:
         entry_id = call.data["entry_id"]
         include_unmarked = bool(call.data.get("include_unmarked", False))
         purge_all = bool(call.data.get("purge_all", False))
+        match_text = call.data.get("match_text")
+        days = call.data.get("days")
+        debug = bool(call.data.get("debug", False))
         entry = _get_entry(entry_id)
         config = {**entry.data, **(entry.options or {})}
-        target = _normalize_calendar_target(config.get(CONF_CALENDAR_TARGET))
-        if not target:
-            raise HomeAssistantError("No target calendar configured")
-        if not hass.services.has_service("calendar", "get_events"):
-            raise HomeAssistantError("calendar.get_events not available")
-
-        now = dt_util.now()
-        days = call.data.get("days", config.get(CONF_CALENDAR_SYNC_DAYS, 120))
-        try:
-            days = int(days)
-        except (TypeError, ValueError):
-            days = 120
-        days = max(7, min(3650, days))
-        start_range = _ensure_local_tz(now - timedelta(days=1))
-        end_range = _ensure_local_tz(now + timedelta(days=days))
-
-        response = await hass.services.async_call(
-            "calendar",
-            "get_events",
-            {
-                "entity_id": target,
-                "start_date_time": start_range.isoformat(),
-                "end_date_time": end_range.isoformat(),
-            },
-            blocking=True,
-            return_response=True,
+        await _async_purge_calendar_events(
+            hass,
+            entry_id,
+            config,
+            include_unmarked=include_unmarked,
+            purge_all=purge_all,
+            days=days,
+            match_text=match_text,
+            debug=debug,
+            raise_on_error=True,
+            log_context="service",
         )
-
-        events: list[Any] = []
-        if isinstance(response, list):
-            events = response
-        elif isinstance(response, dict):
-            if "events" in response:
-                events = response.get("events") or []
-            elif target in response:
-                target_payload = response.get(target)
-                if isinstance(target_payload, dict) and "events" in target_payload:
-                    events = target_payload.get("events") or []
-                elif isinstance(target_payload, list):
-                    events = target_payload
-
-        marker = _calendar_marker(entry_id)
-        child_label = config.get(CONF_CHILD_NAME_DISPLAY, config.get(CONF_CHILD_NAME, ""))
-        summary_prefix = f"{child_label} - " if child_label else ""
-        match_text = str(call.data.get("match_text") or "").strip()
-        match_text_lower = match_text.lower() if match_text else ""
-        child_label_lower = child_label.lower() if child_label else ""
-        deleted = 0
-        matched = 0
-        if hass.services.has_service("calendar", "delete_event"):
-            for event in events:
-                if not isinstance(event, dict):
-                    continue
-                if not purge_all:
-                    matches = marker and _matches_marker(event, marker)
-                    if not matches and (include_unmarked or match_text_lower):
-                        summary = event.get("summary") or event.get("message") or ""
-                        summary_lower = summary.lower()
-                        if include_unmarked and summary_prefix:
-                            matches = summary.startswith(summary_prefix)
-                        if not matches and include_unmarked and child_label_lower:
-                            matches = child_label_lower in summary_lower
-                        if not matches and match_text_lower:
-                            matches = match_text_lower in summary_lower
-                    if not matches:
-                        continue
-                matched += 1
-                event_id = event.get("uid") or event.get("id") or event.get("event_id")
-                if not event_id:
-                    continue
-                await hass.services.async_call(
-                    "calendar",
-                    "delete_event",
-                    {"entity_id": target, "event_id": event_id},
-                    blocking=True,
-                )
-                deleted += 1
-
-        LOGGER.info(
-            "Purged %d custody events from %s (purge_all=%s, include_unmarked=%s, days=%s, match_text=%s)",
-            deleted,
-            target,
-            purge_all,
-            include_unmarked,
-            days,
-            match_text if match_text else None,
-        )
-        if deleted == 0:
-            LOGGER.info(
-                "Purge completed with no deletions (matched=%d, events=%d).",
-                matched,
-                len(events),
-            )
 
     hass.services.async_register(
         DOMAIN,
@@ -762,6 +911,7 @@ def _register_services(hass: HomeAssistant) -> None:
                 vol.Optional("purge_all", default=False): cv.boolean,
                 vol.Optional("days"): cv.positive_int,
                 vol.Optional("match_text"): cv.string,
+                vol.Optional("debug", default=False): cv.boolean,
             }
         ),
     )
