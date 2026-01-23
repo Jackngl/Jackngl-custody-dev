@@ -397,29 +397,62 @@ async def _delete_calendar_event_direct(
             LOGGER.debug("Entity %s not found in states", entity_id)
             return False
 
+        entity = None
+        
+        # Method 1: Try entity_platform
         platform_data = hass.data.get("entity_platform", {})
-        if not isinstance(platform_data, dict):
-            return False
-
-        calendar_platform = platform_data.get("calendar")
-        if not calendar_platform or not hasattr(calendar_platform, "entities"):
-            return False
-
-        entity = calendar_platform.entities.get(entity_id)
+        if isinstance(platform_data, dict):
+            calendar_platform = platform_data.get("calendar")
+            if calendar_platform and hasattr(calendar_platform, "entities"):
+                entity = calendar_platform.entities.get(entity_id)
+        
+        # Method 2: Try entity registry to find the entity
         if not entity:
+            registry = er.async_get(hass)
+            entity_entry = registry.async_get(entity_id)
+            if entity_entry:
+                # Try to get entity from platform using registry info
+                platform_data = hass.data.get("entity_platform", {})
+                if isinstance(platform_data, dict):
+                    calendar_platform = platform_data.get("calendar")
+                    if calendar_platform and hasattr(calendar_platform, "entities"):
+                        # Try both entity_id and unique_id
+                        for eid, ent in calendar_platform.entities.items():
+                            if eid == entity_id or (hasattr(ent, "unique_id") and ent.unique_id == entity_entry.unique_id):
+                                entity = ent
+                                break
+        
+        # Method 3: Try to find by domain
+        if not entity:
+            platform_data = hass.data.get("entity_platform", {})
+            if isinstance(platform_data, dict):
+                calendar_platform = platform_data.get("calendar")
+                if calendar_platform and hasattr(calendar_platform, "entities"):
+                    # Last resort: search all calendar entities
+                    for eid, ent in calendar_platform.entities.items():
+                        if eid == entity_id:
+                            entity = ent
+                            break
+
+        if not entity:
+            LOGGER.debug("Calendar entity %s not found in platform", entity_id)
             return False
 
         if not hasattr(entity, "async_delete_event"):
+            LOGGER.debug("Entity %s does not have async_delete_event method", entity_id)
             return False
 
         if hasattr(entity, "supported_features"):
             if not (entity.supported_features & CalendarEntityFeature.DELETE_EVENT):
+                LOGGER.debug("Entity %s does not support DELETE_EVENT feature", entity_id)
                 return False
 
+        LOGGER.debug("Deleting event uid=%s recurrence_id=%s from %s", uid, recurrence_id, entity_id)
         await entity.async_delete_event(uid, recurrence_id=recurrence_id)
+        LOGGER.info("Successfully deleted event uid=%s from %s", uid, entity_id)
         return True
     except Exception as err:
-        LOGGER.debug("Direct entity delete failed for %s (uid=%s): %s", entity_id, uid, err)
+        LOGGER.warning("Direct entity delete failed for %s (uid=%s): %s", entity_id, uid, err, exc_info=True)
         return False
 
 
@@ -709,6 +742,14 @@ async def _async_purge_calendar_events(
             if len(sample_str) > 500:
                 sample_str = sample_str[:500] + "..."
             LOGGER.info("Purge debug%s: sample event structure:\n%s", context, sample_str)
+            # Also check UID extraction
+            sample_uid, sample_recurrence = _extract_event_uid_and_recurrence(sample_event)
+            LOGGER.info(
+                "Purge debug%s: extracted uid=%s recurrence_id=%s from sample",
+                context,
+                sample_uid,
+                sample_recurrence,
+            )
 
     for event in events:
         if not isinstance(event, dict):
