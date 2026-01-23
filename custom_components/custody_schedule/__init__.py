@@ -13,9 +13,10 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import config_validation as cv, entity_registry as er
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.components.calendar import CalendarEntityFeature
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -344,6 +345,42 @@ def _get_calendar_delete_service(hass: HomeAssistant) -> str | None:
     return None
 
 
+async def _delete_calendar_event_direct(
+    hass: HomeAssistant, entity_id: str, event_id: str
+) -> bool:
+    """Delete a calendar event by accessing the entity directly."""
+    try:
+        state = hass.states.get(entity_id)
+        if not state:
+            LOGGER.debug("Entity %s not found in states", entity_id)
+            return False
+
+        platform_data = hass.data.get("entity_platform", {})
+        if not isinstance(platform_data, dict):
+            return False
+
+        calendar_platform = platform_data.get("calendar")
+        if not calendar_platform or not hasattr(calendar_platform, "entities"):
+            return False
+
+        entity = calendar_platform.entities.get(entity_id)
+        if not entity:
+            return False
+
+        if not hasattr(entity, "async_delete_event"):
+            return False
+
+        if hasattr(entity, "supported_features"):
+            if not (entity.supported_features & CalendarEntityFeature.DELETE_EVENT):
+                return False
+
+        await entity.async_delete_event(event_id)
+        return True
+    except Exception as err:
+        LOGGER.debug("Direct entity delete failed for %s: %s", entity_id, err)
+        return False
+
+
 async def _sync_calendar_events(
     hass: HomeAssistant,
     target: str,
@@ -472,22 +509,31 @@ async def _sync_calendar_events(
 
     # Delete events that no longer exist in the planning
     delete_service = _get_calendar_delete_service(hass)
-    if delete_service:
-        deleted = 0
-        for event in existing_events:
-            key = event.get("__key")
-            if key in desired_keys:
-                continue
-            event_id = _extract_event_id(event)
-            if not event_id:
-                continue
-            await hass.services.async_call(
-                "calendar",
-                delete_service,
-                {"entity_id": target, "event_id": event_id},
-                blocking=True,
-            )
-            deleted += 1
+    deleted = 0
+    for event in existing_events:
+        key = event.get("__key")
+        if key in desired_keys:
+            continue
+        event_id = _extract_event_id(event)
+        if not event_id:
+            continue
+        if delete_service:
+            try:
+                await hass.services.async_call(
+                    "calendar",
+                    delete_service,
+                    {"entity_id": target, "event_id": event_id},
+                    blocking=True,
+                )
+                deleted += 1
+            except Exception as err:
+                LOGGER.debug("Service delete failed in sync, trying direct entity: %s", err)
+                if await _delete_calendar_event_direct(hass, target, event_id):
+                    deleted += 1
+        else:
+            if await _delete_calendar_event_direct(hass, target, event_id):
+                deleted += 1
+    if deleted > 0:
         LOGGER.debug(
             "Calendar sync summary for %s: created=%d updated=%d deleted=%d",
             target,
@@ -504,13 +550,11 @@ async def _sync_calendar_events(
             updated,
             deleted,
         )
-        if created == 0 and updated == 0 and deleted == 0:
-            LOGGER.info(
-                "Calendar sync for %s did not require changes (entries already aligned).",
-                target,
-            )
-    else:
-        LOGGER.debug("Calendar sync delete skipped for %s: no delete service available.", target)
+    if created == 0 and updated == 0 and deleted == 0:
+        LOGGER.info(
+            "Calendar sync for %s did not require changes (entries already aligned).",
+            target,
+        )
 
 
 async def _async_purge_calendar_events(
@@ -588,8 +632,8 @@ async def _async_purge_calendar_events(
     missing_id = 0
     delete_service = _get_calendar_delete_service(hass)
     if not delete_service:
-        LOGGER.warning(
-            "Calendar purge cannot delete events%s: no delete service available on calendar domain",
+        LOGGER.debug(
+            "Calendar purge: no delete service available, will try direct entity access%s",
             context,
         )
 
@@ -609,6 +653,20 @@ async def _async_purge_calendar_events(
     }
     debug_matches: list[str] = []
     debug_misses: list[str] = []
+
+    if debug and events:
+        sample_event = events[0] if isinstance(events[0], dict) else {}
+        LOGGER.info(
+            "Purge debug%s: sample event keys=%s",
+            context,
+            ", ".join(sorted(sample_event.keys())) if isinstance(sample_event, dict) else "not a dict",
+        )
+        if isinstance(sample_event, dict):
+            import json
+            sample_str = json.dumps(sample_event, default=str, indent=2)
+            if len(sample_str) > 500:
+                sample_str = sample_str[:500] + "..."
+            LOGGER.info("Purge debug%s: sample event structure:\n%s", context, sample_str)
 
     for event in events:
         if not isinstance(event, dict):
@@ -661,13 +719,21 @@ async def _async_purge_calendar_events(
                     f"label={label_match} text={text_match} desc='{_truncate(description)}'"
                 )
             if delete_service:
-                await hass.services.async_call(
-                    "calendar",
-                    delete_service,
-                    {"entity_id": target, "event_id": event_id},
-                    blocking=True,
-                )
-                deleted += 1
+                try:
+                    await hass.services.async_call(
+                        "calendar",
+                        delete_service,
+                        {"entity_id": target, "event_id": event_id},
+                        blocking=True,
+                    )
+                    deleted += 1
+                except Exception as err:
+                    LOGGER.debug("Service delete failed, trying direct entity: %s", err)
+                    if await _delete_calendar_event_direct(hass, target, event_id):
+                        deleted += 1
+            else:
+                if await _delete_calendar_event_direct(hass, target, event_id):
+                    deleted += 1
         else:
             if debug and len(debug_misses) < 10:
                 debug_misses.append(
@@ -695,9 +761,9 @@ async def _async_purge_calendar_events(
         )
     if missing_id:
         LOGGER.info("Purge skipped %d matched events without ids.%s", missing_id, context)
-    if not delete_service and matched:
+    if not delete_service and matched and deleted == 0:
         LOGGER.warning(
-            "Purge found %d matching events but cannot delete them%s.",
+            "Purge found %d matching events but could not delete any%s (tried direct entity access).",
             matched,
             context,
         )
