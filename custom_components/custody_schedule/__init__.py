@@ -318,24 +318,59 @@ def _matches_marker(event: dict[str, Any], marker: str) -> bool:
 
 
 def _extract_event_id(event: dict[str, Any]) -> str | None:
-    raw = event.get("uid") or event.get("id") or event.get("event_id")
-    if isinstance(raw, str) and raw:
-        return raw
-    if isinstance(raw, dict):
+    """Extract event ID/UID for backward compatibility."""
+    uid, _ = _extract_event_uid_and_recurrence(event)
+    return uid
+
+
+def _extract_event_uid_and_recurrence(event: dict[str, Any]) -> tuple[str | None, str | None]:
+    """Extract UID and recurrence_id from a calendar event.
+    
+    Returns:
+        Tuple of (uid, recurrence_id) where either can be None
+    """
+    uid = None
+    recurrence_id = None
+    
+    # Try direct uid field first
+    raw_uid = event.get("uid")
+    if isinstance(raw_uid, str) and raw_uid:
+        uid = raw_uid
+    elif isinstance(raw_uid, dict):
         for key in ("uid", "value", "text", "id"):
-            value = raw.get(key)
+            value = raw_uid.get(key)
             if isinstance(value, str) and value:
-                return value
-    for key in ("iCalUID", "ical_uid", "iCalUid"):
-        value = event.get(key)
-        if isinstance(value, str) and value:
-            return value
-        if isinstance(value, dict):
-            for nested in ("value", "text", "uid", "id"):
-                nested_val = value.get(nested)
-                if isinstance(nested_val, str) and nested_val:
-                    return nested_val
-    return None
+                uid = value
+                break
+    
+    # Try alternative UID fields
+    if not uid:
+        for key in ("id", "event_id", "iCalUID", "ical_uid", "iCalUid"):
+            value = event.get(key)
+            if isinstance(value, str) and value:
+                uid = value
+                break
+            elif isinstance(value, dict):
+                for nested in ("value", "text", "uid", "id"):
+                    nested_val = value.get(nested)
+                    if isinstance(nested_val, str) and nested_val:
+                        uid = nested_val
+                        break
+                if uid:
+                    break
+    
+    # Extract recurrence_id if present
+    raw_recurrence = event.get("recurrence_id") or event.get("recurrenceId")
+    if isinstance(raw_recurrence, str) and raw_recurrence:
+        recurrence_id = raw_recurrence
+    elif isinstance(raw_recurrence, dict):
+        for key in ("value", "text", "id"):
+            value = raw_recurrence.get(key)
+            if isinstance(value, str) and value:
+                recurrence_id = value
+                break
+    
+    return uid, recurrence_id
 
 
 def _get_calendar_delete_service(hass: HomeAssistant) -> str | None:
@@ -346,9 +381,16 @@ def _get_calendar_delete_service(hass: HomeAssistant) -> str | None:
 
 
 async def _delete_calendar_event_direct(
-    hass: HomeAssistant, entity_id: str, event_id: str
+    hass: HomeAssistant, entity_id: str, uid: str, recurrence_id: str | None = None
 ) -> bool:
-    """Delete a calendar event by accessing the entity directly."""
+    """Delete a calendar event by accessing the entity directly.
+    
+    Args:
+        hass: Home Assistant instance
+        entity_id: Calendar entity ID (e.g., calendar.jacky_niglio_gmail_com)
+        uid: Event UID (required)
+        recurrence_id: Optional recurrence ID for recurring events
+    """
     try:
         state = hass.states.get(entity_id)
         if not state:
@@ -374,10 +416,10 @@ async def _delete_calendar_event_direct(
             if not (entity.supported_features & CalendarEntityFeature.DELETE_EVENT):
                 return False
 
-        await entity.async_delete_event(event_id)
+        await entity.async_delete_event(uid, recurrence_id=recurrence_id)
         return True
     except Exception as err:
-        LOGGER.debug("Direct entity delete failed for %s: %s", entity_id, err)
+        LOGGER.debug("Direct entity delete failed for %s (uid=%s): %s", entity_id, uid, err)
         return False
 
 
@@ -514,24 +556,24 @@ async def _sync_calendar_events(
         key = event.get("__key")
         if key in desired_keys:
             continue
-        event_id = _extract_event_id(event)
-        if not event_id:
+        uid, recurrence_id = _extract_event_uid_and_recurrence(event)
+        if not uid:
             continue
         if delete_service:
             try:
                 await hass.services.async_call(
                     "calendar",
                     delete_service,
-                    {"entity_id": target, "event_id": event_id},
+                    {"entity_id": target, "event_id": uid},
                     blocking=True,
                 )
                 deleted += 1
             except Exception as err:
                 LOGGER.debug("Service delete failed in sync, trying direct entity: %s", err)
-                if await _delete_calendar_event_direct(hass, target, event_id):
+                if await _delete_calendar_event_direct(hass, target, uid, recurrence_id):
                     deleted += 1
         else:
-            if await _delete_calendar_event_direct(hass, target, event_id):
+            if await _delete_calendar_event_direct(hass, target, uid, recurrence_id):
                 deleted += 1
     if deleted > 0:
         LOGGER.debug(
@@ -673,12 +715,13 @@ async def _async_purge_calendar_events(
             continue
         summary = event.get("summary") or event.get("message") or ""
         description = event.get("description") or ""
-        event_id = _extract_event_id(event)
+        uid, recurrence_id = _extract_event_uid_and_recurrence(event)
+        event_id = uid  # Keep for backward compatibility in stats
         if summary:
             stats["with_summary"] += 1
         if description:
             stats["with_description"] += 1
-        if event_id:
+        if uid:
             stats["with_event_id"] += 1
 
         marker_match = bool(marker and marker in description)
@@ -705,16 +748,16 @@ async def _async_purge_calendar_events(
 
         if matches:
             matched += 1
-            if not event_id:
+            if not uid:
                 missing_id += 1
                 if debug and len(debug_matches) < 10:
                     debug_matches.append(
-                        f"summary='{_truncate(summary)}' id=None desc='{_truncate(description)}'"
+                        f"summary='{_truncate(summary)}' uid=None recurrence_id={recurrence_id} desc='{_truncate(description)}'"
                     )
                 continue
             if debug and len(debug_matches) < 10:
                 debug_matches.append(
-                    f"summary='{_truncate(summary)}' id='{event_id}' "
+                    f"summary='{_truncate(summary)}' uid='{uid}' recurrence_id={recurrence_id} "
                     f"marker={marker_match} legacy={legacy_match} prefix={prefix_match} "
                     f"label={label_match} text={text_match} desc='{_truncate(description)}'"
                 )
@@ -723,21 +766,21 @@ async def _async_purge_calendar_events(
                     await hass.services.async_call(
                         "calendar",
                         delete_service,
-                        {"entity_id": target, "event_id": event_id},
+                        {"entity_id": target, "event_id": uid},
                         blocking=True,
                     )
                     deleted += 1
                 except Exception as err:
                     LOGGER.debug("Service delete failed, trying direct entity: %s", err)
-                    if await _delete_calendar_event_direct(hass, target, event_id):
+                    if await _delete_calendar_event_direct(hass, target, uid, recurrence_id):
                         deleted += 1
             else:
-                if await _delete_calendar_event_direct(hass, target, event_id):
+                if await _delete_calendar_event_direct(hass, target, uid, recurrence_id):
                     deleted += 1
         else:
             if debug and len(debug_misses) < 10:
                 debug_misses.append(
-                    f"summary='{_truncate(summary)}' id='{event_id}' "
+                    f"summary='{_truncate(summary)}' uid='{uid}' recurrence_id={recurrence_id} "
                     f"marker={marker_match} legacy={legacy_match} prefix={prefix_match} "
                     f"label={label_match} text={text_match}"
                 )
