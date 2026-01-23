@@ -257,6 +257,26 @@ data:
   filename: "custody_exceptions.json"
 ```
 
+### `custody_schedule.purge_calendar`
+
+Supprime manuellement les événements du calendrier. Utile pour nettoyer les anciens événements ou forcer une resynchronisation complète.
+
+**Paramètres :**
+- `entry_id` (requis) : ID de l'intégration
+- `include_unmarked` (optionnel) : Inclure les événements sans marqueur spécifique (défaut: `false`)
+- `purge_all` (optionnel) : Supprimer TOUS les événements dans la fenêtre (attention !) (défaut: `false`)
+- `days` (optionnel) : Nombre de jours à scanner (défaut: 120)
+- `match_text` (optionnel) : Filtrer les événements contenant ce texte
+- `debug` (optionnel) : Activer les logs détaillés pour le diagnostic (défaut: `false`)
+
+**Exemple :**
+```yaml
+service: custody_schedule.purge_calendar
+data:
+  entry_id: "1234567890abcdef1234567890abcdef"
+  debug: true
+```
+
 ## 📡 Événements Home Assistant
 
 L'intégration émet automatiquement des événements pour déclencher des automatisations :
