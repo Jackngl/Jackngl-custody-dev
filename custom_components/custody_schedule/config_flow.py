@@ -14,7 +14,7 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv, selector
 from homeassistant.util import dt as dt_util, slugify
-
+from .const import (
     CONF_ARRIVAL_TIME,
     CONF_CALENDAR_SYNC,
     CONF_CALENDAR_TARGET,
@@ -47,7 +47,6 @@ from homeassistant.util import dt as dt_util, slugify
     FRENCH_ZONES_WITH_CITIES,
     HOLIDAY_API,
     REFERENCE_YEARS,
-    VACATION_RULES,
     VACATION_SPLIT_MODES,
 )
 
