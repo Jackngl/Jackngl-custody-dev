@@ -23,6 +23,26 @@
           "location": "Exchange location"
         }
       },
+      "custom_pattern": {
+        "title": "Custom rhythm",
+        "description": "Select the days when the child is present with you over a full 14-day cycle.",
+        "data": {
+          "day_1": "W1 - Mon",
+          "day_2": "W1 - Tue",
+          "day_3": "W1 - Wed",
+          "day_4": "W1 - Thu",
+          "day_5": "W1 - Fri",
+          "day_6": "W1 - Sat",
+          "day_7": "W1 - Sun",
+          "day_8": "W2 - Mon",
+          "day_9": "W2 - Tue",
+          "day_10": "W2 - Wed",
+          "day_11": "W2 - Thu",
+          "day_12": "W2 - Fri",
+          "day_13": "W2 - Sat",
+          "day_14": "W2 - Sun"
+        }
+      },
       "vacations": {
         "title": "School vacations",
         "description": "Configure custody rules during school holidays. Vacations take priority over regular custody. The chosen split applies automatically to all holidays, including summer.",
@@ -142,6 +162,26 @@
           "custody_type": "Custody type",
           "reference_year_custody": "Reference year for regular custody (even/odd)",
           "start_day": "Cycle start day (weeks only)"
+        }
+      },
+      "custom_pattern": {
+        "title": "Custom rhythm",
+        "description": "Select the days when the child is present with you over a full 14-day cycle.",
+        "data": {
+          "day_1": "W1 - Mon",
+          "day_2": "W1 - Tue",
+          "day_3": "W1 - Wed",
+          "day_4": "W1 - Thu",
+          "day_5": "W1 - Fri",
+          "day_6": "W1 - Sat",
+          "day_7": "W1 - Sun",
+          "day_8": "W2 - Mon",
+          "day_9": "W2 - Tue",
+          "day_10": "W2 - Wed",
+          "day_11": "W2 - Thu",
+          "day_12": "W2 - Fri",
+          "day_13": "W2 - Sat",
+          "day_14": "W2 - Sun"
         }
       },
       "schedule": {

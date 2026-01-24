@@ -1,6 +1,6 @@
 # 👨‍👩‍👧‍👦 Planning de garde (Custody Schedule)
 
-![Version](https://img.shields.io/badge/version-1.5.4-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.5-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 
@@ -31,10 +31,9 @@ Intégration Home Assistant pour planifier facilement les gardes alternées, sui
 - ✅ **Calcul automatique** des périodes selon plusieurs rythmes :
   - Semaine alternée (1/1)
   - Week-end alterné
-  - Week-ends semaines paires/impaires
-  - 2-2-3
-  - 2-2-5-5
-  - Règles personnalisées
+  - Rythme personnalisé (sélection jour par jour sur 14 jours)
+  - Rythme 2-2-3 ou 2-2-5-5
+  - Exceptions et règles personnalisées (dates fixes)
 - ✅ **Support des zones scolaires françaises** (A/B/C/Corse/DOM-TOM)
 - ✅ **API officielle** `data.education.gouv.fr` pour les vacances scolaires
 - ✅ **URL d'API personnalisable** dans les options avancées

@@ -23,6 +23,26 @@
           "location": "Lieu d'échange"
         }
       },
+      "custom_pattern": {
+        "title": "Rythme personnalisé",
+        "description": "Cochez les jours où l'enfant est présent chez vous sur un cycle complet de 14 jours.",
+        "data": {
+          "day_1": "S1 - Lun",
+          "day_2": "S1 - Mar",
+          "day_3": "S1 - Mer",
+          "day_4": "S1 - Jeu",
+          "day_5": "S1 - Ven",
+          "day_6": "S1 - Sam",
+          "day_7": "S1 - Dim",
+          "day_8": "S2 - Lun",
+          "day_9": "S2 - Mar",
+          "day_10": "S2 - Mer",
+          "day_11": "S2 - Jeu",
+          "day_12": "S2 - Ven",
+          "day_13": "S2 - Sam",
+          "day_14": "S2 - Dim"
+        }
+      },
       "vacations": {
         "title": "Vacances scolaires",
         "description": "Configurer les règles de garde pendant les vacances scolaires. Les vacances priment sur la garde classique. La répartition choisie s'applique automatiquement à toutes les vacances, y compris l'été.",
@@ -142,6 +162,26 @@
           "custody_type": "Type de garde",
           "reference_year_custody": "Mon année de garde (parité)",
           "start_day": "Jour de départ"
+        }
+      },
+      "custom_pattern": {
+        "title": "Rythme personnalisé",
+        "description": "Cochez les jours où l'enfant est présent chez vous sur un cycle complet de 14 jours.",
+        "data": {
+          "day_1": "S1 - Lun",
+          "day_2": "S1 - Mar",
+          "day_3": "S1 - Mer",
+          "day_4": "S1 - Jeu",
+          "day_5": "S1 - Ven",
+          "day_6": "S1 - Sam",
+          "day_7": "S1 - Dim",
+          "day_8": "S2 - Lun",
+          "day_9": "S2 - Mar",
+          "day_10": "S2 - Mer",
+          "day_11": "S2 - Jeu",
+          "day_12": "S2 - Ven",
+          "day_13": "S2 - Sam",
+          "day_14": "S2 - Dim"
         }
       },
       "schedule": {

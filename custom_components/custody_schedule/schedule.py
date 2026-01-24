@@ -116,6 +116,7 @@ from .const import (
     CONF_AUTO_PARENT_DAYS,
     CONF_PARENTAL_ROLE,
     CONF_ARRIVAL_TIME,
+    CONF_CUSTOM_PATTERN,
     CONF_CUSTOM_RULES,
     CONF_DEPARTURE_TIME,
     CONF_EXCEPTIONS_RECURRING,
@@ -725,6 +726,23 @@ class CustodyScheduleManager:
 
         cycle_days = type_def["cycle_days"]
         pattern = type_def["pattern"]
+
+        # Handle custom pattern if selected
+        if custody_type == "custom" and self._config.get(CONF_CUSTOM_PATTERN):
+            custom_states = str(self._config.get(CONF_CUSTOM_PATTERN)).split(",")
+            cycle_days = len(custom_states)
+            pattern = []
+            if custom_states:
+                current_state = custom_states[0]
+                current_count = 0
+                for state in custom_states:
+                    if state == current_state:
+                        current_count += 1
+                    else:
+                        pattern.append({"days": current_count, "state": current_state})
+                        current_state = state
+                        current_count = 1
+                pattern.append({"days": current_count, "state": current_state})
         windows: list[CustodyWindow] = []
         reference_start = self._reference_start(now, custody_type)
         pointer = reference_start

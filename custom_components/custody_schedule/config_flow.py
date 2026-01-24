@@ -25,6 +25,7 @@ from .const import (
     CONF_CHILD_NAME,
     CONF_CHILD_NAME_DISPLAY,
     CONF_CUSTODY_TYPE,
+    CONF_CUSTOM_PATTERN,
     CONF_DEPARTURE_TIME,
     CONF_EXCEPTIONS,
     CONF_EXCEPTIONS_LIST,
@@ -395,6 +396,8 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # For alternate_weekend/alternate_week_parity, start_day is not used (based on ISO week parity)
             # But we still save it for other custody types
             self._data.update(cleaned)
+            if cleaned[CONF_CUSTODY_TYPE] == "custom":
+                return await self.async_step_custom_pattern()
             return await self.async_step_vacations()
 
         # Use saved data if user goes back
@@ -441,6 +444,32 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="custody", 
             data_schema=schema,
             description_placeholders={"child": self._data.get(CONF_CHILD_NAME_DISPLAY, "l'enfant")}
+        )
+
+    async def async_step_custom_pattern(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Define a custom repeating pattern."""
+        if user_input:
+            pattern = []
+            for i in range(1, 15):
+                state = "on" if user_input.get(f"day_{i}", False) else "off"
+                pattern.append(state)
+            self._data[CONF_CUSTOM_PATTERN] = ",".join(pattern)
+            return await self.async_step_vacations()
+
+        schema_dict = {}
+        # Get existing pattern if any
+        existing = self._data.get(CONF_CUSTOM_PATTERN, "").split(",")
+        weekdays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+        for i in range(1, 15):
+            week_num = 1 if i <= 7 else 2
+            day_idx = (i - 1) % 7
+            label = f"S{week_num} - {weekdays[day_idx]}"
+            default = existing[i-1] == "on" if len(existing) >= i else False
+            schema_dict[vol.Optional(f"day_{i}", default=default)] = selector.BooleanSelector()
+            
+        return self.async_show_form(
+            step_id="custom_pattern",
+            data_schema=vol.Schema(schema_dict)
         )
 
     async def async_step_vacations(self, user_input: dict[str, Any] | None = None) -> FlowResult:
@@ -628,6 +657,8 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
             cleaned = dict(user_input)
             # For alternate_weekend/alternate_week_parity, start_day is not used (based on ISO week parity)
             self._data.update(cleaned)
+            if cleaned[CONF_CUSTODY_TYPE] == "custom":
+                return await self.async_step_custom_pattern()
             return self.async_create_entry(title="", data=self._data)
 
         data = {**self._entry.data, **(self._entry.options or {})}
@@ -667,6 +698,32 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
             step_id="custody", 
             data_schema=schema,
             description_placeholders={"child": self._data.get(CONF_CHILD_NAME_DISPLAY, "l'enfant")}
+        )
+
+    async def async_step_custom_pattern(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Define a custom repeating pattern."""
+        if user_input:
+            pattern = []
+            for i in range(1, 15):
+                state = "on" if user_input.get(f"day_{i}", False) else "off"
+                pattern.append(state)
+            self._data[CONF_CUSTOM_PATTERN] = ",".join(pattern)
+            return self.async_create_entry(title="", data=self._data)
+
+        schema_dict = {}
+        # Get existing pattern if any
+        existing = (self._data.get(CONF_CUSTOM_PATTERN) or "").split(",")
+        weekdays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
+        for i in range(1, 15):
+            week_num = 1 if i <= 7 else 2
+            day_idx = (i - 1) % 7
+            label = f"S{week_num} - {weekdays[day_idx]}"
+            default = existing[i-1] == "on" if len(existing) >= i else False
+            schema_dict[vol.Optional(f"day_{i}", default=default)] = selector.BooleanSelector()
+            
+        return self.async_show_form(
+            step_id="custom_pattern",
+            data_schema=vol.Schema(schema_dict)
         )
 
     async def async_step_schedule(self, user_input: dict[str, Any] | None = None) -> FlowResult:
