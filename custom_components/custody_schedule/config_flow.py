@@ -443,21 +443,9 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_vacations(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Configure vacances scolaires - step 3."""
         if user_input:
-            cleaned = dict(user_input)
-            # Convert empty strings to None for optional fields
-            if cleaned.get(CONF_SUMMER_RULE) == "":
-                cleaned[CONF_SUMMER_RULE] = None
-            if cleaned.get(CONF_JULY_RULE) == "":
-                cleaned[CONF_JULY_RULE] = None
-            if cleaned.get(CONF_AUGUST_RULE) == "":
-                cleaned[CONF_AUGUST_RULE] = None
-            self._data.update(cleaned)
+            self._data.update(user_input)
             return await self.async_step_advanced()
 
-        # Use saved data if user goes back, convert None to empty string for selectors
-        summer_rule_default = self._data.get(CONF_SUMMER_RULE) or ""
-        july_rule_default = self._data.get(CONF_JULY_RULE) or ""
-        august_rule_default = self._data.get(CONF_AUGUST_RULE) or ""
         # Get reference_year for vacations (separate from custody reference_year)
         # Default to "even" if not set
         reference_year_default = self._data.get(
@@ -1009,22 +997,10 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
     async def async_step_vacations(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Modify vacances scolaires (school zone and vacation rules)."""
         if user_input:
-            cleaned = dict(user_input)
-            # Convert empty strings to None for optional fields
-            if cleaned.get(CONF_SUMMER_RULE) == "":
-                cleaned[CONF_SUMMER_RULE] = None
-            if cleaned.get(CONF_JULY_RULE) == "":
-                cleaned[CONF_JULY_RULE] = None
-            if cleaned.get(CONF_AUGUST_RULE) == "":
-                cleaned[CONF_AUGUST_RULE] = None
-            self._data.update(cleaned)
+            self._data.update(user_input)
             return self.async_create_entry(title="", data=self._data)
 
         data = {**self._entry.data, **(self._entry.options or {})}
-        # Convert None to empty string for selectors
-        summer_rule_default = data.get(CONF_SUMMER_RULE) or ""
-        july_rule_default = data.get(CONF_JULY_RULE) or ""
-        august_rule_default = data.get(CONF_AUGUST_RULE) or ""
         # Get reference_year for vacations (separate from custody reference_year)
         reference_year_default = data.get(
             CONF_REFERENCE_YEAR_VACATIONS, data.get(CONF_REFERENCE_YEAR, "even")
