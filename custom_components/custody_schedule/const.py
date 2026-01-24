@@ -55,6 +55,7 @@ CONF_EXCEPTIONS_LIST = "exceptions_list"
 CONF_EXCEPTIONS_RECURRING = "exceptions_recurring"
 CONF_CUSTOM_RULES = "custom_rules"
 CONF_HOLIDAY_API_URL = "holiday_api_url"
+CONF_ALSACE_MOSELLE = "alsace_moselle"
 
 SERVICE_EXPORT_PLANNING_PDF = "export_planning_pdf"
 

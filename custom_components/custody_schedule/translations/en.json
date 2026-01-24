@@ -29,7 +29,8 @@
         "data": {
           "zone": "School zone",
           "vacation_split_mode": "Half split",
-          "school_level": "School level"
+          "school_level": "School level",
+          "alsace_moselle": "Enable Alsace-Moselle public holidays (Good Friday, St Stephen's)"
         }
       },
       "advanced": {
@@ -156,7 +157,8 @@
         "data": {
           "zone": "School zone",
           "vacation_split_mode": "Half split",
-          "school_level": "School level"
+          "school_level": "School level",
+          "alsace_moselle": "Enable Alsace-Moselle public holidays (Good Friday, St Stephen's)"
         }
       },
       "advanced": {

@@ -29,7 +29,7 @@ def _easter_date(year: int) -> date:
     return date(year, month, day)
 
 
-def get_french_holidays(year: int) -> set[date]:
+def get_french_holidays(year: int, include_alsace_moselle: bool = False) -> set[date]:
     """Return set of French public holidays for a given year.
     
     Calculates all official French public holidays (jours fériés).
@@ -48,11 +48,19 @@ def get_french_holidays(year: int) -> set[date]:
     holidays.add(date(year, 11, 11))  # Armistice
     holidays.add(date(year, 12, 25))  # Noël
     
+    # Alsace-Moselle specific fixed holidays
+    if include_alsace_moselle:
+        holidays.add(date(year, 12, 26))  # Saint-Étienne
+    
     # Variable holidays based on Easter
     easter = _easter_date(year)
     holidays.add(easter + timedelta(days=1))   # Lundi de Pâques
     holidays.add(easter + timedelta(days=39))  # Jeudi de l'Ascension
     holidays.add(easter + timedelta(days=50))  # Lundi de Pentecôte
+    
+    # Alsace-Moselle specific variable holidays
+    if include_alsace_moselle:
+        holidays.add(easter - timedelta(days=2))  # Vendredi Saint
     
     return holidays
 
@@ -60,6 +68,7 @@ from .const import (
     ATTR_LOCATION,
     ATTR_NOTES,
     ATTR_ZONE,
+    CONF_ALSACE_MOSELLE,
     CONF_ARRIVAL_TIME,
     CONF_CUSTOM_RULES,
     CONF_DEPARTURE_TIME,
@@ -474,7 +483,8 @@ class CustodyScheduleManager:
             pointer = self._reference_start(now, custody_type)
             
             # Get French holidays for current and next year
-            holidays = get_french_holidays(now.year) | get_french_holidays(now.year + 1)
+            alsace_moselle = self._config.get(CONF_ALSACE_MOSELLE, False)
+            holidays = get_french_holidays(now.year, alsace_moselle) | get_french_holidays(now.year + 1, alsace_moselle)
             
             # Get reference_year to determine parity (even = even weeks, odd = odd weeks)
             reference_year = self._config.get(
@@ -552,7 +562,8 @@ class CustodyScheduleManager:
             pointer = self._reference_start(now, custody_type)
             
             # Get French holidays for current and next year
-            holidays = get_french_holidays(now.year) | get_french_holidays(now.year + 1)
+            alsace_moselle = self._config.get(CONF_ALSACE_MOSELLE, False)
+            holidays = get_french_holidays(now.year, alsace_moselle) | get_french_holidays(now.year + 1, alsace_moselle)
             
             # Get reference_year to determine parity (even = even weeks, odd = odd weeks)
             reference_year = self._config.get(

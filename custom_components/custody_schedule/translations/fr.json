@@ -29,7 +29,8 @@
         "data": {
           "zone": "Zone scolaire",
           "vacation_split_mode": "Répartition des moitiés",
-          "school_level": "Niveau scolaire"
+          "school_level": "Niveau scolaire",
+          "alsace_moselle": "Activer les jours fériés Alsace-Moselle (Vendredi Saint, St-Étienne)"
         }
       },
       "advanced": {
@@ -156,7 +157,8 @@
         "data": {
           "zone": "Zone scolaire",
           "vacation_split_mode": "Répartition des moitiés",
-          "school_level": "Niveau scolaire"
+          "school_level": "Niveau scolaire",
+          "alsace_moselle": "Activer les jours fériés Alsace-Moselle (Vendredi Saint, St-Étienne)"
         }
       },
       "advanced": {

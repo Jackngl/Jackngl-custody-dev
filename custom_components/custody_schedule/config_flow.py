@@ -15,6 +15,7 @@ from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import config_validation as cv, selector
 from homeassistant.util import dt as dt_util, slugify
 from .const import (
+    CONF_ALSACE_MOSELLE,
     CONF_ARRIVAL_TIME,
     CONF_CALENDAR_SYNC,
     CONF_CALENDAR_TARGET,
@@ -463,6 +464,9 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(
                     CONF_SUMMER_SPLIT_MODE, default=self._data.get(CONF_SUMMER_SPLIT_MODE, "half")
                 ): _summer_split_selector(),
+                vol.Optional(
+                    CONF_ALSACE_MOSELLE, default=self._data.get(CONF_ALSACE_MOSELLE, False)
+                ): selector.BooleanSelector(),
             }
         )
         return self.async_show_form(step_id="vacations", data_schema=schema)
@@ -1017,6 +1021,9 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                 vol.Required(
                     CONF_SUMMER_SPLIT_MODE, default=data.get(CONF_SUMMER_SPLIT_MODE, "half")
                 ): _summer_split_selector(),
+                vol.Optional(
+                    CONF_ALSACE_MOSELLE, default=data.get(CONF_ALSACE_MOSELLE, False)
+                ): selector.BooleanSelector(),
             }
         )
         return self.async_show_form(step_id="vacations", data_schema=schema)

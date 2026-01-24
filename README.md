@@ -1,6 +1,6 @@
 # 👨‍👩‍👧‍👦 Planning de garde (Custody Schedule)
 
-![Version](https://img.shields.io/badge/version-1.4.12-blue.svg)
+![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 
@@ -15,6 +15,7 @@ Intégration Home Assistant pour planifier facilement les gardes alternées, sui
 - [Configuration](#configuration)
   - [Synchronisation Google Calendar](#synchronisation-google-calendar)
 - [Diagnostic et Nettoyage (Purge)](#diagnostic-et-nettoyage-purge)
+- [Tableaux de bord (Lovelace)](#tableaux-de-bord-lovelace)
 - [Services disponibles](#services-disponibles)
 - [Événements Home Assistant](#événements-home-assistant)
 - [Entités générées](#entités-générées)
@@ -168,6 +169,61 @@ data:
 > [!TIP]
 > Pour trouver votre `entry_id`, allez dans les **Paramètres** de l'intégration ou utilisez ce modèle dans l'outil Modèles de HA : 
 > `{{ config_entry_id('binary_sensor.NOM_ENFANT_presence') }}`
+
+---
+
+## 🎨 Tableaux de bord (Lovelace)
+
+Voici des exemples de cartes premium pour visualiser la garde sur votre dashboard Home Assistant.
+
+### 1. Carte Mushroom (Recommandé 🌟)
+Cette carte change de couleur et d'icône selon la présence de l'enfant.
+
+```yaml
+type: custom:mushroom-template-card
+primary: |-
+  {% if is_state('binary_sensor.lucas_presence', 'on') %}
+    Lucas est à la maison
+  {% else %}
+    Lucas est chez l'autre parent
+  {% endif %}
+secondary: |-
+  {% if is_state('binary_sensor.lucas_presence', 'on') %}
+    Départ : {{ states('sensor.lucas_next_departure') }}
+  {% else %}
+    Retour : {{ states('sensor.lucas_next_arrival') }}
+  {% endif %}
+icon: |-
+  {% if is_state('binary_sensor.lucas_presence', 'on') %}
+    mdi:home-heart
+  {% else %}
+    mdi:home-export-outline
+  {% endif %}
+icon_color: |-
+  {% if is_state('binary_sensor.lucas_presence', 'on') %}
+    blue
+  {% else %}
+    grey
+  {% endif %}
+tap_action:
+  action: navigate
+  navigation_path: /config/devices/dashboard
+```
+
+### 2. Badge de statut minimaliste
+Idéal pour une vue condensée en haut de dashboard.
+
+```yaml
+type: custom:mushroom-chips-card
+chips:
+  - type: template
+    content: "Lucas: {{ states('sensor.lucas_days_remaining') }}j"
+    icon: mdi:account-clock
+    icon_color: "{{ 'green' if is_state('binary_sensor.lucas_presence', 'on') else 'orange' }}"
+    tap_action:
+      action: more-info
+      entity: binary_sensor.lucas_presence
+```
 
 ---
 
@@ -603,18 +659,16 @@ Les résultats sont disponibles dans les logs Home Assistant (Paramètres → Sy
 - [x] Gestion d'exceptions avancée
 - [x] Export PDF du planning
 
-### v1.4 ✅
-- [x] Optimisation des performances (Synchronisation parallèle)
-- [x] Découpage d'été avancé (Moitiés vs Quinzaines)
-- [x] Traduction française intégrale (Calendrier et Interface)
-- [x] Workflow CI/CD automatisé
-- [x] Résolution des problèmes de stabilité (Version 1.4.12)
+### v1.5 ✅
+- [x] Dashboards Lovelace "Ready-to-use" (Exemples premium)
+- [x] Support des jours fériés régionaux (Alsace-Moselle)
+- [x] Localisation française intégrale
+- [x] Nettoyage automatique des logs de démarrage
 
-### v1.5 (En cours ⚡)
+### v1.6 (En cours ⚡)
 - [ ] Statistiques avancées (Temps passé, répartition annuelle)
 - [ ] Export iCal/ICS natif (pour Outlook/Apple/iOS)
-- [ ] Cartes Lovelace prêtes à l'emploi (Dashboard dédié)
-- [ ] Support des jours fériés régionaux (Alsace-Moselle, etc.)
+- [ ] Notifications push enrichies avec actions rapides
 
 ### v2.0 (Vision Future 🌟)
 - [ ] **Mode Co-parent** : Synchronisation entre deux instances Home Assistant
