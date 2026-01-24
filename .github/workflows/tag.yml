@@ -36,6 +36,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Auto-increment version
+        if: "!contains(github.event.head_commit.message, '[skip version]')"
         run: |
           echo "::group::Auto-incrementing version"
           echo "Checking manifest file: custom_components/custody_schedule/manifest.json"
