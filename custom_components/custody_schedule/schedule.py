@@ -1040,19 +1040,42 @@ class CustodyScheduleManager:
             CONF_REFERENCE_YEAR_VACATIONS, self._config.get(CONF_REFERENCE_YEAR, "even")
         )
         split_mode = self._config.get(CONF_VACATION_SPLIT_MODE, "odd_first")
-        summer_rule = self._config.get(CONF_SUMMER_RULE) if self._config.get(CONF_SUMMER_RULE) in SUMMER_RULES else None
+        summer_mode = self._config.get(CONF_SUMMER_SPLIT_MODE, "half")
 
         def _custody_segment_for_holiday(holiday_obj) -> tuple[datetime, datetime]:
             eff_start, eff_end, mid = self._effective_holiday_bounds(holiday_obj)
 
-            # Summer special-case
-            summer_rule = self._config.get(CONF_SUMMER_RULE) if self._config.get(CONF_SUMMER_RULE) in SUMMER_RULES else None
-            july_rule = self._config.get(CONF_JULY_RULE)
-            august_rule = self._config.get(CONF_AUGUST_RULE)
-            if (summer_rule or july_rule or august_rule) and self._is_summer_break(holiday_obj):
-                # All summer rules (july_even, july_odd, august_even, august_odd, july_first_half, etc.) generate their own windows
-                # via _summer_windows method; fall back to the full effective interval for segment calculation
-                return eff_start, eff_end
+            # Handle summer quarter-split if enabled
+            is_summer = "été" in holiday_obj.name.lower() or holiday_obj.start.month in (7, 8)
+            if is_summer and summer_mode == "quarter":
+                total_duration = eff_end - eff_start
+                seg_duration = total_duration / 4
+                
+                parts = [
+                    (eff_start, eff_start + seg_duration),
+                    (eff_start + seg_duration, eff_start + 2 * seg_duration),
+                    (eff_start + 2 * seg_duration, eff_start + 3 * seg_duration),
+                    (eff_start + 3 * seg_duration, eff_end)
+                ]
+                
+                # Rule logic for parity
+                is_even_year = eff_start.year % 2 == 0
+                if split_mode == "odd_second":
+                    rule_type = "second_half" if not is_even_year else "first_half"
+                else:
+                    rule_type = "first_half" if not is_even_year else "second_half"
+
+                # Find the next segment for this user
+                if rule_type == "first_half":
+                    # User has parts 1 and 3. Return the one that is in the future.
+                    if parts[0][1] > now:
+                        return parts[0]
+                    return parts[2]
+                else:
+                    # User has parts 2 and 4
+                    if parts[1][1] > now:
+                        return parts[1]
+                    return parts[3]
 
             # Automatic vacation rule based on year parity + split mode
             is_even_year = eff_start.year % 2 == 0
