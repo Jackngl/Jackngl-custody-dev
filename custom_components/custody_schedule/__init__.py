@@ -486,7 +486,6 @@ async def _delete_calendar_event_direct(
                                     LOGGER.debug("Found entity by entity_id: %s", entity_id)
                                     break
         
-        # Method 3: Try to find by domain
         if not entity:
             platform_data = hass.data.get("entity_platform", {})
             if isinstance(platform_data, dict):
@@ -497,6 +496,12 @@ async def _delete_calendar_event_direct(
                         if eid == entity_id:
                             entity = ent
                             break
+        
+        # Method 4: Try component (robust method)
+        if not entity:
+            component = hass.data.get("calendar")
+            if component and hasattr(component, "get_entity"):
+                entity = component.get_entity(entity_id)
 
         if not entity:
             LOGGER.warning("Calendar entity %s not found in platform", entity_id)
