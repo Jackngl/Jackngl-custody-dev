@@ -410,7 +410,7 @@ def _extract_event_uid_and_recurrence(event: dict[str, Any]) -> tuple[str | None
     
     # Extract recurrence_id if present
     # Google Calendar uses event.id for recurring events
-    raw_recurrence = event.get("recurrence_id") or event.get("recurrenceId") or event.get("recurring_event_id")
+    raw_recurrence = event.get("recurrence_id") or event.get("recurrenceId")
     if isinstance(raw_recurrence, str) and raw_recurrence:
         recurrence_id = raw_recurrence
     elif isinstance(raw_recurrence, dict):
