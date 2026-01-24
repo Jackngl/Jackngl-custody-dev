@@ -584,7 +584,24 @@ async def _get_calendar_events_direct(
 
         if not entity:
             LOGGER.debug("Direct read: Could not find entity object for %s", entity_id)
-            return None
+            # DEBUG: help locate where entities are stored
+            if isinstance(platform_data, dict):
+                LOGGER.debug("Direct read: hass.data['entity_platform'] keys: %s", list(platform_data.keys()))
+                cal_plat = platform_data.get("calendar")
+                if cal_plat:
+                    LOGGER.debug("Direct read: platform 'calendar' type: %s", type(cal_plat))
+                    if hasattr(cal_plat, "entities"):
+                        LOGGER.debug("Direct read: platform 'calendar' entities keys: %s", list(cal_plat.entities.keys()))
+            
+            # Last ditch attempt: check component
+            component = hass.data.get("calendar")
+            if component and hasattr(component, "get_entity"):
+                entity = component.get_entity(entity_id)
+                if entity:
+                    LOGGER.debug("Direct read: Found entity via component.get_entity")
+
+        if not entity:
+             return None
 
         if not hasattr(entity, "async_get_events"):
             LOGGER.debug("Direct read: Entity %s does not have async_get_events", entity_id)
