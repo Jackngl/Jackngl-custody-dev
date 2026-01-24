@@ -483,7 +483,7 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="custody", 
             data_schema=schema,
-            description_placeholder={"child": self._data.get(CONF_CHILD_NAME_DISPLAY, "l'enfant")}
+            description_placeholders={"child": self._data.get(CONF_CHILD_NAME_DISPLAY, "l'enfant")}
         )
 
     async def async_step_vacations(self, user_input: dict[str, Any] | None = None) -> FlowResult:
@@ -705,7 +705,7 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="custody", 
             data_schema=schema,
-            description_placeholder={"child": self._data.get(CONF_CHILD_NAME_DISPLAY, "l'enfant")}
+            description_placeholders={"child": self._data.get(CONF_CHILD_NAME_DISPLAY, "l'enfant")}
         )
 
     async def async_step_schedule(self, user_input: dict[str, Any] | None = None) -> FlowResult:
