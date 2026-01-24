@@ -1068,10 +1068,6 @@ async def _async_purge_calendar_events(
                 missing_id += 1
                 continue
             del_tasks.append(_async_delete_task(event, delete_service, target))
-    
-    if del_tasks:
-        await asyncio.gather(*del_tasks, return_exceptions=True)
-    deleted = deleted_count[0]
         else:
             if debug and len(debug_misses) < 10:
                 debug_misses.append(
@@ -1079,6 +1075,10 @@ async def _async_purge_calendar_events(
                     f"marker={marker_match} legacy={legacy_match} prefix={prefix_match} "
                     f"label={label_match} text={text_match}"
                 )
+
+    if del_tasks:
+        await asyncio.gather(*del_tasks, return_exceptions=True)
+    deleted = deleted_count[0]
 
     LOGGER.info(
         "Purged %d custody events from %s (purge_all=%s, include_unmarked=%s, days=%s, match_text=%s)%s",
