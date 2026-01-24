@@ -242,8 +242,22 @@ class CustodyScheduleCoordinator(DataUpdateCoordinator[CustodyComputation]):
                 LOGGER.warning("Calendar sync failed for %s: %s", target, err)
 
 
-def _event_key(summary: str, start: str, end: str) -> tuple[str, str, str]:
-    return summary, start, end
+def _event_key(summary: str, start: Any, end: Any) -> tuple[str, datetime, datetime]:
+    """Create a consistent key for event comparison using UTC datetimes."""
+    # Ensure start/end are normalized to UTC datetimes for comparison
+    start_dt = start if isinstance(start, datetime) else dt_util.parse_datetime(str(start))
+    end_dt = end if isinstance(end, datetime) else dt_util.parse_datetime(str(end))
+    
+    if start_dt and start_dt.tzinfo is None:
+        start_dt = start_dt.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
+    if end_dt and end_dt.tzinfo is None:
+        end_dt = end_dt.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
+        
+    return (
+        summary.strip(), 
+        dt_util.as_utc(start_dt) if start_dt else datetime.min.replace(tzinfo=dt_util.UTC),
+        dt_util.as_utc(end_dt) if end_dt else datetime.min.replace(tzinfo=dt_util.UTC)
+    )
 
 
 def _normalize_calendar_target(value: Any) -> str | None:
@@ -261,41 +275,46 @@ def _normalize_calendar_target(value: Any) -> str | None:
     return None
 
 
-def _normalize_event_datetime(value: Any) -> str | None:
+def _normalize_event_datetime(value: Any) -> datetime | None:
+    """Normalize various calendar event datetime formats to a UTC datetime object."""
     if isinstance(value, dict):
         value = value.get("dateTime") or value.get("date")
     elif isinstance(value, str):
-        # Keep raw string for parsing below.
         pass
     elif hasattr(value, "get"):
         try:
             value = value.get("dateTime") or value.get("date")
         except Exception:
-            LOGGER.debug("Calendar event datetime get() failed: %s (%s)", value, type(value).__name__)
             return None
     else:
+        # Fallback for Direct read (CalendarEvent objects)
+        if isinstance(value, datetime):
+            if value.tzinfo is None:
+                value = value.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
+            return dt_util.as_utc(value)
         return None
+
     if isinstance(value, datetime):
         if value.tzinfo is None:
             value = value.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
-        return dt_util.as_utc(value).isoformat()
+        return dt_util.as_utc(value)
     if isinstance(value, date):
         return dt_util.as_utc(
             datetime.combine(value, datetime.min.time(), tzinfo=dt_util.DEFAULT_TIME_ZONE)
-        ).isoformat()
+        )
     if isinstance(value, str):
         parsed = dt_util.parse_datetime(value)
         if parsed:
             if parsed.tzinfo is None:
                 parsed = parsed.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
-            return dt_util.as_utc(parsed).isoformat()
+            return dt_util.as_utc(parsed)
         try:
             parsed_date = date.fromisoformat(value)
+            return dt_util.as_utc(
+                datetime.combine(parsed_date, datetime.min.time(), tzinfo=dt_util.DEFAULT_TIME_ZONE)
+            )
         except ValueError:
             return None
-        return dt_util.as_utc(
-            datetime.combine(parsed_date, datetime.min.time(), tzinfo=dt_util.DEFAULT_TIME_ZONE)
-        ).isoformat()
     return None
 
 
@@ -340,13 +359,27 @@ def _normalize_event_to_dict(event: Any) -> dict[str, Any] | None:
 
 
 def _matches_marker(event: dict[str, Any], marker: str) -> bool:
+    """Identify if an event belongs to THIS specific custody integration instance."""
     if not isinstance(event, dict):
         return False
     description = event.get("description") or ""
+    # Priority 1: Specific unique marker (entry_id)
     if marker and marker in description:
         return True
-    # Backward compatibility for events created before marker was added
-    return "Planning de garde" in description
+    
+    # Priority 2: Child name in description (if marker not found but "Planning de garde" is)
+    # This prevents deleting other children's events in a shared calendar
+    if "Planning de garde" in description:
+        # If we have a specific marker to check against, and it's NOT this one, 
+        # but the description HAS a marker prefix, then it's definitely NOT ours.
+        if "custody_schedule:" in description and marker not in description:
+            return False
+            
+        # Legacy/Fallback: If no unique ID marker found, trust "Planning de garde" 
+        # only if we don't have multiple instances (entry_id) competing.
+        return True
+        
+    return False
 
 
 def _extract_event_id(event: dict[str, Any]) -> str | None:
@@ -683,7 +716,7 @@ async def _sync_calendar_events(
 
     marker = _calendar_marker(entry_id)
 
-    existing_keys: set[tuple[str, str, str]] = set()
+    existing_keys: set[tuple[str, datetime, datetime]] = set()
     existing_events: list[dict[str, Any]] = []
     for event in events:
         event_dict = _normalize_event_to_dict(event)
@@ -693,19 +726,20 @@ async def _sync_calendar_events(
             continue
         event = event_dict
         summary = event.get("summary") or event.get("message") or ""
-        start_val = _normalize_event_datetime(event.get("start"))
-        end_val = _normalize_event_datetime(event.get("end"))
-        if not summary or not start_val or not end_val:
+        start_dt = _normalize_event_datetime(event.get("start"))
+        end_dt = _normalize_event_datetime(event.get("end"))
+        if not summary or not start_dt or not end_dt:
             continue
-        existing_keys.add(_event_key(summary, start_val, end_val))
-        event["__key"] = _event_key(summary, start_val, end_val)
+        key = _event_key(summary, start_dt, end_dt)
+        existing_keys.add(key)
+        event["__key"] = key
         existing_events.append(event)
     LOGGER.debug("Calendar sync: %d existing events after filtering", len(existing_events))
 
     child_label = config.get(CONF_CHILD_NAME_DISPLAY, config.get(CONF_CHILD_NAME, ""))
     location = config.get(CONF_LOCATION) or ""
 
-    desired_keys: set[tuple[str, str, str]] = set()
+    desired_keys: set[tuple[str, datetime, datetime]] = set()
     created = 0
     updated = 0
     for window in state.windows:
@@ -714,9 +748,7 @@ async def _sync_calendar_events(
         if window.end < start_range or window.start > end_range:
             continue
         summary = f"{child_label} - {window.label}".strip()
-        start_val = _ensure_local_tz(window.start).isoformat()
-        end_val = _ensure_local_tz(window.end).isoformat()
-        key = _event_key(summary, start_val, end_val)
+        key = _event_key(summary, window.start, window.end)
         desired_keys.add(key)
         if key not in existing_keys:
             await hass.services.async_call(
@@ -725,8 +757,8 @@ async def _sync_calendar_events(
                 {
                     "entity_id": target,
                     "summary": summary,
-                    "start_date_time": start_val,
-                    "end_date_time": end_val,
+                    "start_date_time": _ensure_local_tz(window.start).isoformat(),
+                    "end_date_time": _ensure_local_tz(window.end).isoformat(),
                     "description": f"{marker} Planning de garde ({window.source})",
                     "location": location,
                 },
@@ -750,8 +782,8 @@ async def _sync_calendar_events(
                                 "entity_id": target,
                                 "event_id": event_id,
                                 "summary": summary,
-                                "start_date_time": start_val,
-                                "end_date_time": end_val,
+                                "start_date_time": _ensure_local_tz(window.start).isoformat(),
+                                "end_date_time": _ensure_local_tz(window.end).isoformat(),
                                 "description": new_desc,
                                 "location": location,
                             },
@@ -954,6 +986,8 @@ async def _async_purge_calendar_events(
         event = event_dict
         summary = event.get("summary") or event.get("message") or ""
         description = event.get("description") or ""
+        start_dt = _normalize_event_datetime(event.get("start"))
+        end_dt = _normalize_event_datetime(event.get("end"))
         uid, recurrence_id = _extract_event_uid_and_recurrence(event)
         event_id = uid  # Keep for backward compatibility in stats
         if summary:
@@ -962,6 +996,9 @@ async def _async_purge_calendar_events(
             stats["with_description"] += 1
         if uid:
             stats["with_event_id"] += 1
+        
+        # Consistent key for detection/filtering
+        key = _event_key(summary, start_dt, end_dt) if start_dt and end_dt else None
 
         marker_match = bool(marker and marker in description)
         legacy_match = "Planning de garde" in description
