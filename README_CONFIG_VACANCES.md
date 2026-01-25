@@ -1,6 +1,6 @@
 # 📖 Guide de Configuration - Vacances Scolaires
 
-Ce guide explique comment configurer les **vacances scolaires** dans l'application Planning de garde.
+Ce guide explique comment configurer les **vacances scolaires** dans l'application Custody.
 
 > ⚠️ **Important** : 
 > - Ce guide concerne **uniquement les vacances scolaires**

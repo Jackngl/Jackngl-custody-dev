@@ -1,6 +1,6 @@
-# 📊 Guide des Entités - Planning de garde
+# 📊 Guide des Entités - Custody
 
-Ce guide explique toutes les entités créées par l'intégration **Planning de garde** et comment les utiliser dans vos dashboards et automations Home Assistant.
+Ce guide explique toutes les entités créées par l'intégration **Custody** et comment les utiliser dans vos dashboards et automations Home Assistant.
 
 ---
 
@@ -16,7 +16,7 @@ Ce guide explique toutes les entités créées par l'intégration **Planning de 
 
 ## 🎯 Vue d'ensemble
 
-L'intégration **Planning de garde** crée automatiquement plusieurs entités pour chaque enfant configuré :
+L'intégration **Custody** crée automatiquement plusieurs entités pour chaque enfant configuré :
 
 - **1 Binary Sensor** : Statut de présence
 - **1 Calendar** : Calendrier complet
@@ -280,7 +280,7 @@ Cette carte affiche automatiquement :
 
 ```yaml
 type: entities
-title: Planning de garde - {Enfant}
+title: Custody - {Enfant}
 entities:
   - entity: binary_sensor.{enfant}_presence
     name: Présence
@@ -322,7 +322,7 @@ cards:
 type: calendar
 entities:
   - entity: calendar.{enfant}_calendar
-title: Planning de garde - {Enfant}
+title: Custody - {Enfant}
 ```
 
 ### Exemple 3 bis : Carte calendrier (vue mensuelle)
@@ -331,7 +331,7 @@ title: Planning de garde - {Enfant}
 type: calendar
 entities:
   - entity: calendar.{enfant}_calendar
-title: Planning de garde - {Enfant}
+title: Custody - {Enfant}
 initial_view: dayGridMonth
 ```
 

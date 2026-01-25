@@ -1,4 +1,4 @@
-# 👨‍👩‍👧‍👦 Planning de garde (Custody Schedule)
+# 👨‍👩‍👧‍👦 Custody (Custody Schedule)
 
 ![Version](https://img.shields.io/badge/version-1.5.6-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12-green.svg)
@@ -66,13 +66,13 @@ Intégration Home Assistant pour planifier facilement les gardes alternées, sui
    - Cliquer sur **Ajouter**
 
 3. **Installer l'intégration** :
-   - Rechercher "Planning de garde" ou "Custody Schedule"
+   - Rechercher "Custody" ou "Custody Schedule"
    - Cliquer sur **Télécharger**
    - Redémarrer Home Assistant
 
 4. **Configurer l'intégration** :
    - Aller dans **Paramètres** → **Appareils & services** → **Ajouter une intégration**
-   - Chercher "Planning de garde" et suivre les étapes
+   - Chercher "Custody" et suivre les étapes
 
 ### Installation manuelle
 
@@ -91,7 +91,7 @@ Intégration Home Assistant pour planifier facilement les gardes alternées, sui
 
 4. **Ajouter l'intégration** :
    - Aller dans **Paramètres** → **Appareils & services** → **Ajouter une intégration**
-   - Chercher "Planning de garde" et suivre les étapes
+   - Chercher "Custody" et suivre les étapes
 
 ## ⚙️ Configuration
 
@@ -113,7 +113,7 @@ La configuration se fait entièrement via l'interface utilisateur :
 
 Si vous souhaitez utiliser une API alternative pour les vacances scolaires :
 
-1. Aller dans **Paramètres** → **Appareils & services** → **Planning de garde** → **Options**
+1. Aller dans **Paramètres** → **Appareils & services** → **Custody** → **Options**
 2. Sélectionner **Options avancées**
 3. Entrer votre URL personnalisée dans le champ **URL API vacances scolaires**
    - L'URL doit contenir les placeholders `{year}` et `{zone}`
@@ -124,7 +124,7 @@ Si vous souhaitez utiliser une API alternative pour les vacances scolaires :
 Si vous activez la synchronisation, l'intégration crée et supprime automatiquement les événements de garde
 sur un calendrier Home Assistant (`calendar.*`) — y compris ceux fournis par l'intégration Google Calendar officielle.
 
-1. Aller dans **Paramètres** → **Appareils & services** → **Planning de garde** → **Options**
+1. Aller dans **Paramètres** → **Appareils & services** → **Custody** → **Options**
 2. Sélectionner **Options avancées**
 3. Activer **Synchronisation Google Calendar**
 4. Choisir le **Calendrier cible**
@@ -135,7 +135,7 @@ sur un calendrier Home Assistant (`calendar.*`) — y compris ceux fournis par l
 
 Vous pouvez ajouter des exceptions (jours supplémentaires, garde en semaine, etc.) via l'UI :
 
-1. Aller dans **Paramètres** → **Appareils & services** → **Planning de garde** → **Options**
+1. Aller dans **Paramètres** → **Appareils & services** → **Custody** → **Options**
 2. Sélectionner **Exceptions**
 3. Ajouter / Modifier / Supprimer une exception (début + fin + titre)
 
@@ -155,7 +155,7 @@ Depuis la version 1.3.0, la purge utilise une méthode d'accès direct aux entit
 ### Comment lancer une purge manuelle
 
 1. Allez dans **Outils de développement** -> **Actions** (ou Services).
-2. Sélectionnez l'action `Planning de garde: Purger le calendrier`.
+2. Sélectionnez l'action `Custody: Purger le calendrier`.
 3. Passez en **mode YAML** et utilisez le modèle suivant :
 
 ```yaml
@@ -534,7 +534,7 @@ automation:
 
 ```yaml
 type: entities
-title: Planning de garde
+title: Custody
 entities:
   - entity: binary_sensor.lucas_presence
     name: Présence

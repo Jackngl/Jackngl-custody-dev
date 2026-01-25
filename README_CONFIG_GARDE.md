@@ -1,6 +1,6 @@
 # 📖 Guide de Configuration - Garde Classique (Weekends/Semaines)
 
-Ce guide explique comment configurer la **garde classique** (weekends et semaines alternées) dans l'application Planning de garde.
+Ce guide explique comment configurer la **garde classique** (weekends et semaines alternées) dans l'application Custody.
 
 > ⚠️ **Important** : 
 > - Ce guide concerne **uniquement la garde classique** (hors vacances scolaires)
