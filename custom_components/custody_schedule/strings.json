@@ -1,5 +1,5 @@
 {
-  "title": "Planning de garde",
+  "title": "Custody",
   "config": {
     "step": {
       "user": {
@@ -130,7 +130,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Options du planning de garde",
+        "title": "Options de Custody",
         "description": "Choisissez ce que vous souhaitez modifier."
       },
       "custody": {

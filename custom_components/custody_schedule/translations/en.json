@@ -1,5 +1,5 @@
 {
-  "title": "Custody Schedule",
+  "title": "Custody",
   "config": {
     "step": {
       "user": {
@@ -152,7 +152,7 @@
   "options": {
     "step": {
       "init": {
-        "title": "Custody Schedule Options",
+        "title": "Custody Options",
         "description": "Choose what you want to modify."
       },
       "custody": {

@@ -1,13 +1,12 @@
 {
   "custody_schedule": {
     "domain": "custody_schedule",
-    "name": "Planning de garde",
+    "name": "Custody",
     "integrations": [
       {
         "domain": "custody_schedule",
-        "name": "Planning de garde"
+        "name": "Custody"
       }
     ]
   }
 }
-
