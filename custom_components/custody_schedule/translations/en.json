@@ -155,25 +155,25 @@
     },
     "sensor": {
       "next_arrival": {
-        "name": "Next arrival"
+        "name": "Next arrival (Custody)"
       },
       "next_departure": {
-        "name": "Next departure"
+        "name": "Next departure (Custody)"
       },
       "days_remaining": {
-        "name": "Days remaining"
+        "name": "Days remaining (Custody)"
       },
       "current_period": {
-        "name": "Current period"
+        "name": "Current period (Custody)"
       },
       "next_vacation_name": {
-        "name": "Next vacations"
+        "name": "Next vacations (Custody)"
       },
       "next_vacation_start": {
-        "name": "Next vacations start"
+        "name": "Next vacations start (Custody)"
       },
       "days_until_vacation": {
-        "name": "Days until vacations"
+        "name": "Days until vacations (Custody)"
       }
     }
   },

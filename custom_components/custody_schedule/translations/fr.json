@@ -144,7 +144,7 @@
   "entity": {
     "binary_sensor": {
       "presence": {
-        "name": "Présence"
+        "name": "Présence (Garde)"
       },
       "calendar": {
         "name": "Calendrier"
@@ -155,25 +155,25 @@
     },
     "sensor": {
       "next_arrival": {
-        "name": "Prochaine arrivée"
+        "name": "Prochaine arrivée (Garde)"
       },
       "next_departure": {
-        "name": "Prochain départ"
+        "name": "Prochain départ (Garde)"
       },
       "days_remaining": {
-        "name": "Jours restants"
+        "name": "Jours restants (Garde)"
       },
       "current_period": {
-        "name": "Période actuelle"
+        "name": "Période actuelle (Garde)"
       },
       "next_vacation_name": {
-        "name": "Prochaines vacances"
+        "name": "Prochaines vacances (Garde)"
       },
       "next_vacation_start": {
-        "name": "Début des prochaines vacances"
+        "name": "Début des prochaines vacances (Garde)"
       },
       "days_until_vacation": {
-        "name": "Jours jusqu'aux vacances"
+        "name": "Jours jusqu'aux vacances (Garde)"
       }
     }
   },
