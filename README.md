@@ -3,7 +3,6 @@
 ![Version](https://img.shields.io/badge/version-1.5.9-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Jackngl&repository=custody-v1&category=integration)
 
 Intégration Home Assistant pour planifier facilement les gardes alternées, suivre les périodes en cours et automatiser la maison (chauffage, notifications, dashboard…).
 
@@ -58,22 +57,22 @@ Intégration Home Assistant pour planifier facilement les gardes alternées, sui
 
 1. **Installer HACS** si ce n'est pas déjà fait : [Documentation HACS](https://hacs.xyz/docs/setup/download)
 
-2. **Ajouter ce dépôt à HACS** :
-   - Aller dans **HACS** → **Intégrations**
-   - Cliquer sur les **3 points** (⋮) en haut à droite
-   - Sélectionner **Dépôts personnalisés**
-   - Ajouter l'URL : `https://github.com/Jackngl/custody-v1`
-   - Catégorie : **Intégration**
-   - Cliquer sur **Ajouter**
+2. **Installer l'intégration** :
 
-3. **Installer l'intégration** :
-   - Rechercher "Custody" ou "Custody Schedule"
-   - Cliquer sur **Télécharger**
-   - Redémarrer Home Assistant
+   [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Jackngl&repository=custody-v1&category=integration)
 
-4. **Configurer l'intégration** :
-   - Aller dans **Paramètres** → **Appareils & services** → **Ajouter une intégration**
-   - Chercher "Custody" et suivre les étapes
+   Cliquez sur le bouton ci-dessus pour ouvrir HACS directement sur l'intégration.
+   
+   *Si le bouton ne fonctionne pas :* 
+   Ajoutez le dépôt manuellement (`https://github.com/Jackngl/custody-v1`) dans **HACS** > **Dépôts personnalisés**.
+
+3. **Télécharger et Redémarrer** :
+   - Cliquez sur **Télécharger** dans HACS.
+   - Une fois l'installation terminée, **Redémarrez Home Assistant**.
+
+4. **Configurer** :
+   - Allez dans **Paramètres** → **Appareils & services** → **Ajouter une intégration**
+   - Cherchez "Custody" et configurez vos enfants.
 
 ### Installation manuelle
 
