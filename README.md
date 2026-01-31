@@ -59,12 +59,12 @@ Intégration Home Assistant pour planifier facilement les gardes alternées, sui
 
 2. **Installer l'intégration** :
 
-   [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Jackngl&repository=custody-v1&category=integration)
+   [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Jackngl&repository=custody&category=integration)
 
    Cliquez sur le bouton ci-dessus pour ouvrir HACS directement sur l'intégration.
    
    *Si le bouton ne fonctionne pas :* 
-   Ajoutez le dépôt manuellement (`https://github.com/Jackngl/custody-v1`) dans **HACS** > **Dépôts personnalisés**.
+   Ajoutez le dépôt manuellement (`https://github.com/Jackngl/custody`) dans **HACS** > **Dépôts personnalisés**.
 
 3. **Télécharger et Redémarrer** :
    - Cliquez sur **Télécharger** dans HACS.
@@ -79,12 +79,12 @@ Intégration Home Assistant pour planifier facilement les gardes alternées, sui
 1. **Télécharger le code** :
    ```bash
    cd /config
-   git clone https://github.com/Jackngl/custody-v1.git
+   git clone https://github.com/Jackngl/custody.git
    ```
 
 2. **Copier le dossier** :
    ```bash
-   cp -r custody-v1/custom_components/custody_schedule /config/custom_components/
+   cp -r custody/custom_components/custody_schedule /config/custom_components/
    ```
 
 3. **Redémarrer Home Assistant**

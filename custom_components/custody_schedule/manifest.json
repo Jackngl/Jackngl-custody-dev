@@ -5,8 +5,8 @@
   "after_dependencies": [
     "calendar"
   ],
-  "documentation": "https://github.com/Jackngl/custody-v1",
-  "issue_tracker": "https://github.com/Jackngl/custody-v1/issues",
+  "documentation": "https://github.com/Jackngl/custody",
+  "issue_tracker": "https://github.com/Jackngl/custody/issues",
   "codeowners": [
     "@Jackngl"
   ],
