@@ -110,7 +110,7 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
             name=child_name,
             manufacturer="Custody",
             model="Custody Planning",
-            sw_version="1.8.0",
+            sw_version="1.8.7",
         )
         photo = entry.data.get(CONF_PHOTO)
         if photo:

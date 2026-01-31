@@ -7,6 +7,7 @@ from typing import Any
 from homeassistant.components.device_tracker import TrackerEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -50,6 +51,13 @@ class CustodyDeviceTracker(CoordinatorEntity[CustodyComputation], TrackerEntity)
         super().__init__(coordinator)
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_device_tracker"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=child_name,
+            manufacturer="Custody",
+            model="Custody Planning",
+            sw_version=entry.version if hasattr(entry, "version") else "1.8.7",
+        )
         photo = entry.data.get(CONF_PHOTO)
         if photo:
             self._attr_entity_picture = photo

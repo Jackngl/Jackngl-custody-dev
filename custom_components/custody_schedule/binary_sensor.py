@@ -58,7 +58,7 @@ class CustodyPresenceBinarySensor(CoordinatorEntity[CustodyComputation], BinaryS
             name=child_name,
             manufacturer="Custody",
             model="Custody Planning",
-            sw_version=entry.version if hasattr(entry, "version") else "1.8.0",
+            sw_version=entry.version if hasattr(entry, "version") else "1.8.7",
         )
         photo = entry.data.get(CONF_PHOTO)
         if photo:
