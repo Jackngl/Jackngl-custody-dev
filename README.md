@@ -3,6 +3,7 @@
 ![Version](https://img.shields.io/badge/version-1.5.7-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=Jackngl&repository=custody-v1&category=integration)
 
 Intégration Home Assistant pour planifier facilement les gardes alternées, suivre les périodes en cours et automatiser la maison (chauffage, notifications, dashboard…).
 
