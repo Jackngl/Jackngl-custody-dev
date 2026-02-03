@@ -47,11 +47,12 @@ class FranceEducationProvider(BaseHolidayProvider):
             return f"{year - 1}-{year}"
         return f"{year}-{year + 1}"
 
-    def _normalize_zone(self, zone: str) -> str:
-        """Normalize zone name for API compatibility."""
         zone_mapping = {
             "Corse": "Corse",
             "DOM-TOM": "Guadeloupe",
+            "A": "Zone A",
+            "B": "Zone B",
+            "C": "Zone C",
         }
         return zone_mapping.get(zone, zone)
 
@@ -96,8 +97,8 @@ class FranceEducationProvider(BaseHolidayProvider):
                             payload_all = await resp2.json()
                             for r in payload_all.get("records", []):
                                 fields = r.get("fields", {})
-                                zone_field = fields.get("zones") or fields.get("zone") or ""
-                                if normalized_zone in str(zone_field):
+                                zone_field = str(fields.get("zones") or fields.get("zone") or "")
+                                if normalized_zone == zone_field or normalized_zone in zone_field.split(","):
                                     records.append(r)
 
                     for record in records:
