@@ -2,34 +2,32 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
-import json
-from pathlib import Path
 import asyncio
+import json
+from datetime import date, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
-
+from homeassistant.components.calendar import CalendarEntityFeature, CalendarEvent
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import config_validation as cv, entity_registry as er
-
-CONFIG_SCHEMA = cv.config_entry_only_config_schema
-from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.components.calendar import CalendarEntityFeature, CalendarEvent
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_CALENDAR_SYNC,
+    CONF_CALENDAR_SYNC_DAYS,
+    CONF_CALENDAR_SYNC_INTERVAL_HOURS,
+    CONF_CALENDAR_TARGET,
     CONF_CHILD_NAME,
     CONF_CHILD_NAME_DISPLAY,
-    CONF_CALENDAR_SYNC,
-    CONF_CALENDAR_SYNC_INTERVAL_HOURS,
-    CONF_CALENDAR_SYNC_DAYS,
-    CONF_CALENDAR_TARGET,
+    CONF_COUNTRY,
     CONF_EXCEPTIONS_LIST,
     CONF_EXCEPTIONS_RECURRING,
     CONF_HOLIDAY_API_URL,
@@ -37,22 +35,25 @@ from .const import (
     CONF_REFERENCE_YEAR,
     CONF_REFERENCE_YEAR_CUSTODY,
     CONF_REFERENCE_YEAR_VACATIONS,
+    DEFAULT_COUNTRY,
     DOMAIN,
     HOLIDAY_API,
     LOGGER,
     PLATFORMS,
+    SERVICE_EXPORT_EXCEPTIONS,
+    SERVICE_IMPORT_EXCEPTIONS,
     SERVICE_OVERRIDE_PRESENCE,
+    SERVICE_PURGE_CALENDAR,
     SERVICE_REFRESH_SCHEDULE,
     SERVICE_SET_MANUAL_DATES,
     SERVICE_TEST_HOLIDAY_API,
-    SERVICE_EXPORT_EXCEPTIONS,
-    SERVICE_IMPORT_EXCEPTIONS,
-    SERVICE_PURGE_CALENDAR,
     UPDATE_INTERVAL,
 )
+from .intent import async_setup_intents
 from .schedule import CustodyComputation, CustodyScheduleManager
 from .school_holidays import SchoolHolidayClient
-from .intent import async_setup_intents
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -72,17 +73,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     config = {**entry.data, **(entry.options or {})}
     config = _migrate_reference_years(hass, entry, config)
     api_url = config.get(CONF_HOLIDAY_API_URL) or HOLIDAY_API
-    
+
     # Store clients by API URL to support multiple entries with different API URLs
     # Multiple entries can share the same client if they use the same API URL (benefits from shared cache)
     holiday_clients: dict[str, SchoolHolidayClient] = hass.data[DOMAIN].setdefault("holiday_clients", {})
-    
+
     if api_url not in holiday_clients:
         holiday_clients[api_url] = SchoolHolidayClient(hass, api_url)
         LOGGER.debug("Created new holiday client for API URL: %s", api_url)
-    
+
     holidays = holiday_clients[api_url]
-    
+
     manager = CustodyScheduleManager(hass, config, holidays)
     _apply_manual_exceptions(manager, config)
     coordinator = CustodyScheduleCoordinator(hass, manager, entry)
@@ -240,7 +241,9 @@ class CustodyScheduleCoordinator(DataUpdateCoordinator[CustodyComputation]):
                 return
             try:
                 if not self.hass.services.has_service("calendar", "get_events"):
-                    LOGGER.debug("Calendar sync skipped: calendar.get_events not yet available (normal during startup).")
+                    LOGGER.debug(
+                        "Calendar sync skipped: calendar.get_events not yet available (normal during startup)."
+                    )
                     return
                 LOGGER.debug("Calendar sync starting for %s", target)
                 await _sync_calendar_events(self.hass, target, state, config, self.entry.entry_id)
@@ -255,16 +258,16 @@ def _event_key(summary: str, start: Any, end: Any) -> tuple[str, datetime, datet
     # Ensure start/end are normalized to UTC datetimes for comparison
     start_dt = start if isinstance(start, datetime) else dt_util.parse_datetime(str(start))
     end_dt = end if isinstance(end, datetime) else dt_util.parse_datetime(str(end))
-    
+
     if start_dt and start_dt.tzinfo is None:
         start_dt = start_dt.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
     if end_dt and end_dt.tzinfo is None:
         end_dt = end_dt.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
-        
+
     return (
-        summary.strip(), 
+        summary.strip(),
         dt_util.as_utc(start_dt) if start_dt else datetime.min.replace(tzinfo=dt_util.UTC),
-        dt_util.as_utc(end_dt) if end_dt else datetime.min.replace(tzinfo=dt_util.UTC)
+        dt_util.as_utc(end_dt) if end_dt else datetime.min.replace(tzinfo=dt_util.UTC),
     )
 
 
@@ -307,9 +310,7 @@ def _normalize_event_datetime(value: Any) -> datetime | None:
             value = value.replace(tzinfo=dt_util.DEFAULT_TIME_ZONE)
         return dt_util.as_utc(value)
     if isinstance(value, date):
-        return dt_util.as_utc(
-            datetime.combine(value, datetime.min.time(), tzinfo=dt_util.DEFAULT_TIME_ZONE)
-        )
+        return dt_util.as_utc(datetime.combine(value, datetime.min.time(), tzinfo=dt_util.DEFAULT_TIME_ZONE))
     if isinstance(value, str):
         parsed = dt_util.parse_datetime(value)
         if parsed:
@@ -318,9 +319,7 @@ def _normalize_event_datetime(value: Any) -> datetime | None:
             return dt_util.as_utc(parsed)
         try:
             parsed_date = date.fromisoformat(value)
-            return dt_util.as_utc(
-                datetime.combine(parsed_date, datetime.min.time(), tzinfo=dt_util.DEFAULT_TIME_ZONE)
-            )
+            return dt_util.as_utc(datetime.combine(parsed_date, datetime.min.time(), tzinfo=dt_util.DEFAULT_TIME_ZONE))
         except ValueError:
             return None
     return None
@@ -338,7 +337,7 @@ def _calendar_marker(entry_id: str) -> str:
 
 def _normalize_event_to_dict(event: Any) -> dict[str, Any] | None:
     """Convert a CalendarEvent object or dict to a dict.
-    
+
     calendar.get_events can return CalendarEvent objects or dicts.
     This function normalizes them to dicts for consistent processing.
     """
@@ -374,19 +373,19 @@ def _matches_marker(event: dict[str, Any], marker: str) -> bool:
     # Priority 1: Specific unique marker (entry_id)
     if marker and marker in description:
         return True
-    
+
     # Priority 2: Child name in description (if marker not found but "Planning de garde" is)
     # This prevents deleting other children's events in a shared calendar
     if "Planning de garde" in description:
-        # If we have a specific marker to check against, and it's NOT this one, 
+        # If we have a specific marker to check against, and it's NOT this one,
         # but the description HAS a marker prefix, then it's definitely NOT ours.
         if "custody_schedule:" in description and marker not in description:
             return False
-            
-        # Legacy/Fallback: If no unique ID marker found, trust "Planning de garde" 
+
+        # Legacy/Fallback: If no unique ID marker found, trust "Planning de garde"
         # only if we don't have multiple instances (entry_id) competing.
         return True
-        
+
     return False
 
 
@@ -398,17 +397,17 @@ def _extract_event_id(event: dict[str, Any]) -> str | None:
 
 def _extract_event_uid_and_recurrence(event: dict[str, Any]) -> tuple[str | None, str | None]:
     """Extract UID and recurrence_id from a calendar event.
-    
+
     Based on Google Calendar implementation:
     - uid should be event.ical_uuid (from CalendarEvent)
     - recurrence_id should be event.id if it's a recurring event
-    
+
     Returns:
         Tuple of (uid, recurrence_id) where either can be None
     """
     uid = None
     recurrence_id = None
-    
+
     # Google Calendar uses ical_uuid as the UID
     # Try direct uid field first (CalendarEvent format)
     raw_uid = event.get("uid")
@@ -420,7 +419,7 @@ def _extract_event_uid_and_recurrence(event: dict[str, Any]) -> tuple[str | None
             if isinstance(value, str) and value:
                 uid = value
                 break
-    
+
     # Try ical_uuid directly (Google Calendar internal format)
     if not uid:
         raw_ical = event.get("ical_uuid") or event.get("icalUuid")
@@ -432,7 +431,7 @@ def _extract_event_uid_and_recurrence(event: dict[str, Any]) -> tuple[str | None
                 if isinstance(value, str) and value:
                     uid = value
                     break
-    
+
     # Try alternative UID fields (various formats)
     if not uid:
         for key in ("id", "event_id", "iCalUID", "ical_uid", "iCalUid", "icalUuid"):
@@ -448,7 +447,7 @@ def _extract_event_uid_and_recurrence(event: dict[str, Any]) -> tuple[str | None
                         break
                 if uid:
                     break
-    
+
     # Extract recurrence_id if present
     # Google Calendar uses event.id for recurring events
     raw_recurrence = event.get("recurrence_id") or event.get("recurrenceId")
@@ -460,13 +459,13 @@ def _extract_event_uid_and_recurrence(event: dict[str, Any]) -> tuple[str | None
             if isinstance(value, str) and value:
                 recurrence_id = value
                 break
-    
+
     # If event has recurring_event_id, use event.id as recurrence_id
     if event.get("recurring_event_id") and not recurrence_id:
         raw_id = event.get("id")
         if isinstance(raw_id, str) and raw_id:
             recurrence_id = raw_id
-    
+
     return uid, recurrence_id
 
 
@@ -481,7 +480,7 @@ async def _delete_calendar_event_direct(
     hass: HomeAssistant, entity_id: str, uid: str, recurrence_id: str | None = None
 ) -> bool:
     """Delete a calendar event by accessing the entity directly.
-    
+
     Args:
         hass: Home Assistant instance
         entity_id: Calendar entity ID (e.g., calendar.jacky_niglio_gmail_com)
@@ -495,14 +494,14 @@ async def _delete_calendar_event_direct(
             return False
 
         entity = None
-        
+
         # Method 1: Try entity_platform
         platform_data = hass.data.get("entity_platform", {})
         if isinstance(platform_data, dict):
             calendar_platform = platform_data.get("calendar")
             if calendar_platform and hasattr(calendar_platform, "entities"):
                 entity = calendar_platform.entities.get(entity_id)
-        
+
         # Method 2: Try entity registry to find the entity (most reliable for Google Calendar)
         if not entity:
             registry = er.async_get(hass)
@@ -526,7 +525,7 @@ async def _delete_calendar_event_direct(
                                     entity = ent
                                     LOGGER.debug("Found entity by entity_id: %s", entity_id)
                                     break
-        
+
         if not entity:
             platform_data = hass.data.get("entity_platform", {})
             if isinstance(platform_data, dict):
@@ -537,7 +536,7 @@ async def _delete_calendar_event_direct(
                         if eid == entity_id:
                             entity = ent
                             break
-        
+
         # Method 4: Try component (robust method)
         if not entity:
             component = hass.data.get("calendar")
@@ -549,15 +548,19 @@ async def _delete_calendar_event_direct(
             return False
 
         if not hasattr(entity, "async_delete_event"):
-            LOGGER.warning("Entity %s does not have async_delete_event method (type: %s)", 
-                          entity_id, type(entity).__name__)
+            LOGGER.warning(
+                "Entity %s does not have async_delete_event method (type: %s)", entity_id, type(entity).__name__
+            )
             return False
 
         # Check if entity supports DELETE_EVENT feature
         if hasattr(entity, "supported_features"):
             if not (entity.supported_features & CalendarEntityFeature.DELETE_EVENT):
-                LOGGER.warning("Entity %s does not support DELETE_EVENT feature (supported: %s)", 
-                             entity_id, entity.supported_features)
+                LOGGER.warning(
+                    "Entity %s does not support DELETE_EVENT feature (supported: %s)",
+                    entity_id,
+                    entity.supported_features,
+                )
                 return False
 
         # Validate UID
@@ -565,9 +568,14 @@ async def _delete_calendar_event_direct(
             LOGGER.warning("Invalid UID for deletion: %s (type: %s)", uid, type(uid))
             return False
 
-        LOGGER.debug("Deleting event uid=%s recurrence_id=%s from %s (entity type: %s)", 
-                    uid, recurrence_id, entity_id, type(entity).__name__)
-        
+        LOGGER.debug(
+            "Deleting event uid=%s recurrence_id=%s from %s (entity type: %s)",
+            uid,
+            recurrence_id,
+            entity_id,
+            type(entity).__name__,
+        )
+
         # Call async_delete_event - handle both with and without recurrence_id
         # Google Calendar's async_delete_event signature: async_delete_event(uid: str, recurrence_id: str | None = None)
         try:
@@ -595,9 +603,15 @@ async def _delete_calendar_event_direct(
         LOGGER.warning("Entity %s missing required attribute: %s", entity_id, attr_err, exc_info=True)
         return False
     except TypeError as type_err:
-        LOGGER.warning("Type error deleting event from %s (uid=%s, recurrence_id=%s): %s. Entity type: %s", 
-                      entity_id, uid, recurrence_id, type_err, 
-                      type(entity).__name__ if 'entity' in locals() else 'unknown', exc_info=True)
+        LOGGER.warning(
+            "Type error deleting event from %s (uid=%s, recurrence_id=%s): %s. Entity type: %s",
+            entity_id,
+            uid,
+            recurrence_id,
+            type_err,
+            type(entity).__name__ if "entity" in locals() else "unknown",
+            exc_info=True,
+        )
         return False
     except Exception as err:
         LOGGER.warning("Direct entity delete failed for %s (uid=%s): %s", entity_id, uid, err, exc_info=True)
@@ -613,7 +627,7 @@ async def _get_calendar_events_direct(
         entity = None
         registry = er.async_get(hass)
         entity_entry = registry.async_get(entity_id)
-        
+
         platform_data = hass.data.get("entity_platform", {})
         if isinstance(platform_data, dict):
             calendar_platform = platform_data.get("calendar")
@@ -637,8 +651,10 @@ async def _get_calendar_events_direct(
                 if cal_plat:
                     LOGGER.debug("Direct read: platform 'calendar' type: %s", type(cal_plat))
                     if hasattr(cal_plat, "entities"):
-                        LOGGER.debug("Direct read: platform 'calendar' entities keys: %s", list(cal_plat.entities.keys()))
-            
+                        LOGGER.debug(
+                            "Direct read: platform 'calendar' entities keys: %s", list(cal_plat.entities.keys())
+                        )
+
             # Last ditch attempt: check component
             component = hass.data.get("calendar")
             if component and hasattr(component, "get_entity"):
@@ -647,7 +663,7 @@ async def _get_calendar_events_direct(
                     LOGGER.debug("Direct read: Found entity via component.get_entity")
 
         if not entity:
-             return None
+            return None
 
         if not hasattr(entity, "async_get_events"):
             LOGGER.debug("Direct read: Entity %s does not have async_get_events", entity_id)
@@ -659,7 +675,7 @@ async def _get_calendar_events_direct(
         events = await entity.async_get_events(hass, start_date, end_date)
         LOGGER.debug("Direct read: Got %d events (type: %s)", len(events), type(events))
         if events and len(events) > 0:
-             LOGGER.debug("Direct read: Sample event type: %s", type(events[0]))
+            LOGGER.debug("Direct read: Sample event type: %s", type(events[0]))
         return events
     except Exception as err:
         LOGGER.warning("Direct read failed for %s: %s", entity_id, err)
@@ -692,7 +708,7 @@ async def _sync_calendar_events(
 
     # Method 1: Try direct entity access first (to get UIDs)
     events = await _get_calendar_events_direct(hass, target, start_range, end_range)
-    
+
     # Method 2: Fallback to service call if direct access failed or returned empty (and we expect something?)
     if events is None:
         LOGGER.debug("Direct event read failed/unavailable, falling back to service call")
@@ -806,7 +822,9 @@ async def _sync_calendar_events(
                 if event_id:
                     new_desc = f"{marker} Planning de garde ({window.source})"
                     if existing.get("description") != new_desc or existing.get("location") != location:
-                        tasks.append(_async_update_event(event_id, summary, window, marker, target, location, window.source))
+                        tasks.append(
+                            _async_update_event(event_id, summary, window, marker, target, location, window.source)
+                        )
                         updated += 1
 
     if tasks:
@@ -814,17 +832,19 @@ async def _sync_calendar_events(
 
     # Delete events that no longer exist in the planning (parallel)
     delete_service = _get_calendar_delete_service(hass)
-    deleted_count = [0] # Mutable for closure
+    deleted_count = [0]  # Mutable for closure
     del_tasks = []
 
     async def _async_delete_event(ev, ds, target):
         uid, rid = _extract_event_uid_and_recurrence(ev)
-        if not uid: return
+        if not uid:
+            return
         async with semaphore:
             try:
                 if ds:
                     sd = {"entity_id": target, "uid": str(uid).strip()}
-                    if rid: sd["recurrence_id"] = str(rid).strip()
+                    if rid:
+                        sd["recurrence_id"] = str(rid).strip()
                     await hass.services.async_call("calendar", ds, sd, blocking=True)
                 else:
                     await _delete_calendar_event_direct(hass, target, uid, rid)
@@ -835,7 +855,7 @@ async def _sync_calendar_events(
     for event in existing_events:
         if event.get("__key") not in desired_keys:
             del_tasks.append(_async_delete_event(event, delete_service, target))
-    
+
     if del_tasks:
         await asyncio.gather(*del_tasks, return_exceptions=True)
     deleted = deleted_count[0]
@@ -904,7 +924,7 @@ async def _async_purge_calendar_events(
 
     # Method 1: Try direct entity access first (to get UIDs)
     events = await _get_calendar_events_direct(hass, target, start_range, end_range)
-    
+
     # Method 2: Fallback to service call
     if events is None:
         LOGGER.debug("Direct event read failed/unavailable, falling back to service call")
@@ -977,6 +997,7 @@ async def _async_purge_calendar_events(
         )
         if isinstance(sample_event, dict):
             import json
+
             try:
                 sample_str = json.dumps(sample_event, default=str, indent=2)
                 if len(sample_str) > 500:
@@ -1000,19 +1021,15 @@ async def _async_purge_calendar_events(
         event = event_dict
         summary = event.get("summary") or event.get("message") or ""
         description = event.get("description") or ""
-        start_dt = _normalize_event_datetime(event.get("start"))
-        end_dt = _normalize_event_datetime(event.get("end"))
+
         uid, recurrence_id = _extract_event_uid_and_recurrence(event)
-        event_id = uid  # Keep for backward compatibility in stats
+
         if summary:
             stats["with_summary"] += 1
         if description:
             stats["with_description"] += 1
         if uid:
             stats["with_event_id"] += 1
-        
-        # Consistent key for detection/filtering
-        key = _event_key(summary, start_dt, end_dt) if start_dt and end_dt else None
 
         marker_match = bool(marker and marker in description)
         legacy_match = "Planning de garde" in description
@@ -1038,12 +1055,14 @@ async def _async_purge_calendar_events(
 
     async def _async_delete_task(ev, ds, target):
         ev_uid, ev_rid = _extract_event_uid_and_recurrence(ev)
-        if not ev_uid: return
+        if not ev_uid:
+            return
         async with semaphore:
             try:
                 if ds:
                     sd = {"entity_id": target, "uid": str(ev_uid).strip()}
-                    if ev_rid: sd["recurrence_id"] = str(ev_rid).strip()
+                    if ev_rid:
+                        sd["recurrence_id"] = str(ev_rid).strip()
                     await hass.services.async_call("calendar", ds, sd, blocking=True)
                 else:
                     await _delete_calendar_event_direct(hass, target, ev_uid, ev_rid)
@@ -1065,11 +1084,16 @@ async def _async_purge_calendar_events(
         label_match = child_label and child_label in summary
         text_match = match_text and match_text_lower in summary.lower()
 
-        if marker_match: stats["marker"] += 1
-        if legacy_match: stats["legacy"] += 1
-        if prefix_match: stats["prefix"] += 1
-        if label_match: stats["label"] += 1
-        if text_match: stats["text"] += 1
+        if marker_match:
+            stats["marker"] += 1
+        if legacy_match:
+            stats["legacy"] += 1
+        if prefix_match:
+            stats["prefix"] += 1
+        if label_match:
+            stats["label"] += 1
+        if text_match:
+            stats["text"] += 1
 
         matches = purge_all or (marker_match or legacy_match or prefix_match or label_match or text_match)
 
@@ -1119,8 +1143,7 @@ async def _async_purge_calendar_events(
     if debug:
         calendar_services = hass.services.async_services().get("calendar", {})
         LOGGER.info(
-            "Purge debug%s: total=%d summary=%d desc=%d ids=%d marker=%d legacy=%d "
-            "prefix=%d label=%d text=%d",
+            "Purge debug%s: total=%d summary=%d desc=%d ids=%d marker=%d legacy=%d " "prefix=%d label=%d text=%d",
             context,
             len(events),
             stats["with_summary"],
@@ -1146,9 +1169,7 @@ async def _async_purge_calendar_events(
     return deleted, matched, len(events)
 
 
-def _migrate_reference_years(
-    hass: HomeAssistant, entry: ConfigEntry, config: dict[str, Any]
-) -> dict[str, Any]:
+def _migrate_reference_years(hass: HomeAssistant, entry: ConfigEntry, config: dict[str, Any]) -> dict[str, Any]:
     """Backfill split reference year keys from legacy config if needed."""
     legacy = config.get(CONF_REFERENCE_YEAR)
     custody_year = config.get(CONF_REFERENCE_YEAR_CUSTODY)
@@ -1164,6 +1185,7 @@ def _migrate_reference_years(
         return {**updated, **(entry.options or {})}
 
     return config
+
 
 def _register_services(hass: HomeAssistant) -> None:
     """Register services exposed by the integration."""
@@ -1393,7 +1415,7 @@ def _register_services(hass: HomeAssistant) -> None:
         country = call.data.get("country")
         zone = call.data.get("zone", "A")
         year = call.data.get("year")
-        
+
         if entry_id:
             if not isinstance(entry_id, str) or not entry_id.strip():
                 raise HomeAssistantError("entry_id must be a non-empty string when provided")
@@ -1404,21 +1426,21 @@ def _register_services(hass: HomeAssistant) -> None:
             api_url = config.get(CONF_HOLIDAY_API_URL) or HOLIDAY_API
         else:
             api_url = HOLIDAY_API
-        
+
         # Use shared client if available, otherwise create a temporary one for testing
         holiday_clients: dict[str, SchoolHolidayClient] = hass.data[DOMAIN].get("holiday_clients", {})
         if api_url in holiday_clients:
             holidays = holiday_clients[api_url]
         else:
             holidays = SchoolHolidayClient(hass, api_url)
-        
+
         if entry_id and not country:
             country = config.get(CONF_COUNTRY, DEFAULT_COUNTRY)
         if not country:
             country = DEFAULT_COUNTRY
 
         result = await holidays.async_test_connection(country, zone, year)
-        
+
         # Log the result
         if result["success"]:
             LOGGER.info(
@@ -1429,7 +1451,7 @@ def _register_services(hass: HomeAssistant) -> None:
             )
         else:
             LOGGER.error("API test failed: %s", result.get("error"))
-        
+
         # Store result in hass.data for potential UI display
         hass.data[DOMAIN]["last_api_test"] = result
 

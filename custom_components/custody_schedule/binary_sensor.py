@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.binary_sensor import BinarySensorEntity, BinarySensorDeviceClass
+from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
@@ -12,31 +12,32 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import CustodyScheduleCoordinator
-from .schedule import CustodyComputation
 from .const import (
     ATTR_CUSTODY_TYPE,
+    ATTR_DAYS_UNTIL_VACATION,
     ATTR_NEXT_ARRIVAL,
     ATTR_NEXT_DEPARTURE,
-    ATTR_VACATION_NAME,
+    ATTR_NEXT_VACATION_END,
     ATTR_NEXT_VACATION_NAME,
     ATTR_NEXT_VACATION_START,
-    ATTR_NEXT_VACATION_END,
-    ATTR_DAYS_UNTIL_VACATION,
     ATTR_SCHOOL_HOLIDAYS_RAW,
+    ATTR_VACATION_NAME,
     CONF_CHILD_NAME,
     CONF_CHILD_NAME_DISPLAY,
     CONF_PHOTO,
     DOMAIN,
 )
+from .schedule import CustodyComputation
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up the binary sensor."""
     if DOMAIN not in hass.data or entry.entry_id not in hass.data[DOMAIN]:
         from .const import LOGGER
+
         LOGGER.error("Custody schedule entry %s not found in hass.data", entry.entry_id)
         return
-    
+
     coordinator: CustodyScheduleCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     child_name = entry.data.get(CONF_CHILD_NAME_DISPLAY, entry.data.get(CONF_CHILD_NAME))
     async_add_entities([CustodyPresenceBinarySensor(coordinator, entry, child_name)])

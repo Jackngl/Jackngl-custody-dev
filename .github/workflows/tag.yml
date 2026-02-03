@@ -51,11 +51,11 @@ jobs:
           if git show --name-only --format="" HEAD | grep -q "custom_components/custody_schedule/manifest.json"; then
             echo "ℹ️ Manifest file was manually modified in this commit."
             echo "Skipping auto-increment to respect the manual version."
-            
+
             # Extract current version to ensure README badge is synced
             CURRENT_VERSION=$(python3 -c "import json, pathlib; print(json.loads(pathlib.Path('custom_components/custody_schedule/manifest.json').read_text(encoding='utf-8')).get('version', ''))")
             echo "Detected manual version: $CURRENT_VERSION"
-            
+
             echo "Syncing README badge (if needed)..."
             python3 scripts/update_version.py "$CURRENT_VERSION"
           else
@@ -191,15 +191,15 @@ jobs:
           API_URL="https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME"
           echo "Checking release for tag: $TAG_NAME"
           echo "API URL: $API_URL"
-          
+
           RESPONSE=$(curl -s -w "\n%{http_code}" \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             "$API_URL" 2>&1)
-          
+
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | head -n-1)
-          
+
           echo "HTTP Response Code: $HTTP_CODE"
           if [ "$HTTP_CODE" = "200" ]; then
             echo "✓ Release $TAG_NAME already exists"
@@ -236,7 +236,7 @@ jobs:
           name: Release v${{ steps.version.outputs.version }}
           body: |
             ## Version ${{ steps.version.outputs.version }}
-            
+
             Voir le [README](https://github.com/${{ github.repository }}/blob/main/README.md) pour plus de détails.
           draft: false
           prerelease: false
@@ -275,7 +275,7 @@ jobs:
             "$API_URL" 2>&1)
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
           BODY=$(echo "$RESPONSE" | head -n-1)
-          
+
           echo "HTTP Response Code: $HTTP_CODE"
           if [ "$HTTP_CODE" = "200" ]; then
             echo "✓ Release $TAG_NAME created successfully"

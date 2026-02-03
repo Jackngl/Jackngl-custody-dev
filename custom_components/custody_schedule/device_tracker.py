@@ -12,24 +12,18 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import CustodyScheduleCoordinator
+from .const import CONF_CHILD_NAME, CONF_CHILD_NAME_DISPLAY, CONF_PHOTO, DOMAIN
 from .schedule import CustodyComputation
-from .const import (
-    CONF_CHILD_NAME,
-    CONF_CHILD_NAME_DISPLAY,
-    CONF_PHOTO,
-    DOMAIN,
-)
 
 
-async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
-) -> None:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up the device tracker."""
     if DOMAIN not in hass.data or entry.entry_id not in hass.data[DOMAIN]:
         from .const import LOGGER
+
         LOGGER.error("Custody schedule entry %s not found in hass.data", entry.entry_id)
         return
-    
+
     coordinator: CustodyScheduleCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     child_name = entry.data.get(CONF_CHILD_NAME_DISPLAY, entry.data.get(CONF_CHILD_NAME))
     async_add_entities([CustodyDeviceTracker(coordinator, entry, child_name)])
@@ -68,7 +62,7 @@ class CustodyDeviceTracker(CoordinatorEntity[CustodyComputation], TrackerEntity)
         data = self.coordinator.data
         if not data:
             return "not_home"
-        
+
         return "home" if data.is_present else "not_home"
 
     @property
@@ -82,7 +76,7 @@ class CustodyDeviceTracker(CoordinatorEntity[CustodyComputation], TrackerEntity)
         data = self.coordinator.data
         if not data:
             return {}
-        
+
         return {
             "child_name": self._entry.data.get(CONF_CHILD_NAME_DISPLAY, self._entry.data.get(CONF_CHILD_NAME)),
             "source": "custody_schedule",

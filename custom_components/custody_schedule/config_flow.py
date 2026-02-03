@@ -2,33 +2,34 @@
 
 from __future__ import annotations
 
+import uuid
 from datetime import date, datetime, time
 from pathlib import Path
 from typing import Any
-import uuid
 
 import voluptuous as vol
-
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
-from homeassistant.helpers import config_validation as cv, selector
-from homeassistant.util import dt as dt_util, slugify
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import selector
+from homeassistant.util import dt as dt_util
+from homeassistant.util import slugify
+
 from .const import (
     CONF_ALSACE_MOSELLE,
     CONF_ARRIVAL_TIME,
     CONF_AUTO_PARENT_DAYS,
     CONF_CALENDAR_SYNC,
-    CONF_CALENDAR_TARGET,
     CONF_CALENDAR_SYNC_DAYS,
     CONF_CALENDAR_SYNC_INTERVAL_HOURS,
+    CONF_CALENDAR_TARGET,
     CONF_CHILD_NAME,
     CONF_CHILD_NAME_DISPLAY,
     CONF_COUNTRY,
     CONF_CUSTODY_TYPE,
     CONF_CUSTOM_PATTERN,
     CONF_DEPARTURE_TIME,
-    CONF_EXCEPTIONS,
     CONF_EXCEPTIONS_LIST,
     CONF_EXCEPTIONS_RECURRING,
     CONF_HOLIDAY_API_URL,
@@ -40,7 +41,6 @@ from .const import (
     CONF_PHOTO,
     CONF_REFERENCE_YEAR,
     CONF_REFERENCE_YEAR_CUSTODY,
-    CONF_REFERENCE_YEAR_VACATIONS,
     CONF_SCHOOL_LEVEL,
     CONF_START_DAY,
     CONF_SUMMER_SPLIT_MODE,
@@ -56,7 +56,6 @@ from .const import (
     SUBDIVISIONS,
     VACATION_SPLIT_MODES,
 )
-
 
 ALLOWED_PHOTO_PREFIXES = ("http://", "https://", "media-source://", "data:")
 ALLOWED_PHOTO_PREFIXES_CI = tuple(prefix.lower() for prefix in ALLOWED_PHOTO_PREFIXES)
@@ -91,21 +90,15 @@ def _format_child_name(value: str) -> str:
 def _zone_selector(country: str | None = None) -> selector.SelectSelector:
     """Create a zone selector with appropriate subdivisions for the country."""
     options_list = []
-    
+
     if country == "FR" or country is None:
-        options_list = [
-            {"value": zone, "label": FRENCH_ZONES_WITH_CITIES.get(zone, zone)} for zone in FRENCH_ZONES
-        ]
+        options_list = [{"value": zone, "label": FRENCH_ZONES_WITH_CITIES.get(zone, zone)} for zone in FRENCH_ZONES]
     elif country in SUBDIVISIONS:
-        options_list = [
-            {"value": code, "label": label} for code, label in SUBDIVISIONS[country].items()
-        ]
-    
+        options_list = [{"value": code, "label": label} for code, label in SUBDIVISIONS[country].items()]
+
     # Fallback to France if nothing found
     if not options_list:
-        options_list = [
-            {"value": zone, "label": FRENCH_ZONES_WITH_CITIES.get(zone, zone)} for zone in FRENCH_ZONES
-        ]
+        options_list = [{"value": zone, "label": FRENCH_ZONES_WITH_CITIES.get(zone, zone)} for zone in FRENCH_ZONES]
 
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
@@ -147,9 +140,7 @@ def _school_level_selector() -> selector.SelectSelector:
 
 def _custody_type_selector() -> selector.SelectSelector:
     """Create a custody type selector with localized labels."""
-    options_list = [
-        {"value": key, "label": key} for key in sorted(CUSTODY_TYPES.keys())
-    ]
+    options_list = [{"value": key, "label": key} for key in sorted(CUSTODY_TYPES.keys())]
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
             options=options_list,
@@ -161,9 +152,7 @@ def _custody_type_selector() -> selector.SelectSelector:
 
 def _reference_year_selector() -> selector.SelectSelector:
     """Create a reference year selector with localized labels."""
-    options_list = [
-        {"value": year, "label": year} for year in REFERENCE_YEARS
-    ]
+    options_list = [{"value": year, "label": year} for year in REFERENCE_YEARS]
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
             options=options_list,
@@ -176,9 +165,7 @@ def _reference_year_selector() -> selector.SelectSelector:
 def _start_day_selector() -> selector.SelectSelector:
     """Create a start day selector with localized labels."""
     days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-    options_list = [
-        {"value": day, "label": day} for day in days
-    ]
+    options_list = [{"value": day, "label": day} for day in days]
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
             options=options_list,
@@ -208,9 +195,7 @@ def _vacation_split_selector() -> selector.SelectSelector:
         "odd_first": "Années impaires = 1ère moitié (années paires = 2ème moitié)",
         "odd_second": "Années impaires = 2ème moitié (années paires = 1ère moitié)",
     }
-    options_list = [
-        {"value": mode, "label": translations.get(mode, mode)} for mode in VACATION_SPLIT_MODES
-    ]
+    options_list = [{"value": mode, "label": translations.get(mode, mode)} for mode in VACATION_SPLIT_MODES]
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
             options=options_list,
@@ -221,7 +206,7 @@ def _vacation_split_selector() -> selector.SelectSelector:
 
 def _time_to_str(value: Any, default: str) -> str:
     """Convert TimeSelector output to HH:MM string.
-    
+
     Handles various formats:
     - datetime.time objects
     - "HH:MM" strings
@@ -419,17 +404,13 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         custody_type = self._data.get(CONF_CUSTODY_TYPE, "alternate_week")
         # start_day is only relevant for custody types that use cycles (not alternate_weekend/alternate_week_parity)
         show_start_day = custody_type not in ("alternate_weekend", "alternate_week_parity")
-        
+
         reference_year_default = self._data.get(
             CONF_REFERENCE_YEAR_CUSTODY, self._data.get(CONF_REFERENCE_YEAR, "even")
         )
         schema_dict = {
-            vol.Required(
-                CONF_CUSTODY_TYPE, default=custody_type
-            ): _custody_type_selector(),
-            vol.Required(
-                CONF_REFERENCE_YEAR_CUSTODY, default=reference_year_default
-            ): _reference_year_selector(),
+            vol.Required(CONF_CUSTODY_TYPE, default=custody_type): _custody_type_selector(),
+            vol.Required(CONF_REFERENCE_YEAR_CUSTODY, default=reference_year_default): _reference_year_selector(),
             vol.Required(
                 CONF_ARRIVAL_TIME, default=self._data.get(CONF_ARRIVAL_TIME, "08:00")
             ): selector.TimeSelector(),
@@ -441,14 +422,14 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Only show start_day for custody types that use it
         if show_start_day:
-            schema_dict[vol.Required(
-                CONF_START_DAY, default=self._data.get(CONF_START_DAY, "monday")
-            )] = _start_day_selector()
+            schema_dict[
+                vol.Required(CONF_START_DAY, default=self._data.get(CONF_START_DAY, "monday"))
+            ] = _start_day_selector()
 
         return self.async_show_form(
             step_id="custody",
             data_schema=vol.Schema(schema_dict),
-            description_placeholders={"child": self._data.get(CONF_CHILD_NAME_DISPLAY, "l'enfant")}
+            description_placeholders={"child": self._data.get(CONF_CHILD_NAME_DISPLAY, "l'enfant")},
         )
 
     async def async_step_custom_pattern(self, user_input: dict[str, Any] | None = None) -> FlowResult:
@@ -464,18 +445,12 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         schema_dict = {}
         # Get existing pattern if any
         existing = self._data.get(CONF_CUSTOM_PATTERN, "").split(",")
-        weekdays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
         for i in range(1, 15):
-            week_num = 1 if i <= 7 else 2
-            day_idx = (i - 1) % 7
-            label = f"S{week_num} - {weekdays[day_idx]}"
-            default = existing[i-1] == "on" if len(existing) >= i else False
+
+            default = existing[i - 1] == "on" if len(existing) >= i else False
             schema_dict[vol.Optional(f"day_{i}", default=default)] = selector.BooleanSelector()
-            
-        return self.async_show_form(
-            step_id="custom_pattern",
-            data_schema=vol.Schema(schema_dict)
-        )
+
+        return self.async_show_form(step_id="custom_pattern", data_schema=vol.Schema(schema_dict))
 
     async def async_step_vacations(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Configure school vacations - step 3."""
@@ -487,7 +462,7 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         country_default = self._data.get(CONF_COUNTRY, DEFAULT_COUNTRY)
         zone_default = self._data.get(CONF_ZONE, "A")
         vacation_split_default = self._data.get(CONF_VACATION_SPLIT_MODE, "odd_first")
-        
+
         schema_dict = {
             vol.Required(CONF_COUNTRY, default=country_default): selector.SelectSelector(
                 selector.SelectSelectorConfig(
@@ -572,24 +547,18 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Optional(
                     CONF_CALENDAR_TARGET,
                     default=data.get(CONF_CALENDAR_TARGET, ""),
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="calendar")
-                ),
+                ): selector.EntitySelector(selector.EntitySelectorConfig(domain="calendar")),
                 vol.Optional(
                     CONF_CALENDAR_SYNC_DAYS,
                     default=data.get(CONF_CALENDAR_SYNC_DAYS, 120),
                 ): selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=7, max=365, mode=selector.NumberSelectorMode.BOX, step=1
-                    )
+                    selector.NumberSelectorConfig(min=7, max=365, mode=selector.NumberSelectorMode.BOX, step=1)
                 ),
                 vol.Optional(
                     CONF_CALENDAR_SYNC_INTERVAL_HOURS,
                     default=data.get(CONF_CALENDAR_SYNC_INTERVAL_HOURS, 1),
                 ): selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=1, max=24, mode=selector.NumberSelectorMode.BOX, step=1
-                    )
+                    selector.NumberSelectorConfig(min=1, max=24, mode=selector.NumberSelectorMode.BOX, step=1)
                 ),
                 vol.Optional(
                     CONF_HOLIDAY_API_URL,
@@ -670,18 +639,12 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         custody_type = data.get(CONF_CUSTODY_TYPE, "alternate_week")
         # start_day is only relevant for custody types that use cycles (not alternate_weekend/alternate_week_parity)
         show_start_day = custody_type not in ("alternate_weekend", "alternate_week_parity")
-        
-        reference_year_default = data.get(
-            CONF_REFERENCE_YEAR_CUSTODY, data.get(CONF_REFERENCE_YEAR, "even")
-        )
+
+        reference_year_default = data.get(CONF_REFERENCE_YEAR_CUSTODY, data.get(CONF_REFERENCE_YEAR, "even"))
         schema_dict = {
-            vol.Required(
-                CONF_CUSTODY_TYPE, default=custody_type
-            ): _custody_type_selector(),
+            vol.Required(CONF_CUSTODY_TYPE, default=custody_type): _custody_type_selector(),
             # Unified label for reference year
-            vol.Required(
-                CONF_REFERENCE_YEAR_CUSTODY, default=reference_year_default
-            ): selector.SelectSelector(
+            vol.Required(CONF_REFERENCE_YEAR_CUSTODY, default=reference_year_default): selector.SelectSelector(
                 selector.SelectSelectorConfig(
                     options=[
                         {"value": "even", "label": "Je l'ai les années paires"},
@@ -691,18 +654,18 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                 )
             ),
         }
-        
+
         # Only show start_day for custody types that use it
         if show_start_day:
-            schema_dict[vol.Required(
-                CONF_START_DAY, default=data.get(CONF_START_DAY, "monday")
-            )] = _start_day_selector()
-        
+            schema_dict[
+                vol.Required(CONF_START_DAY, default=data.get(CONF_START_DAY, "monday"))
+            ] = _start_day_selector()
+
         schema = vol.Schema(schema_dict)
         return self.async_show_form(
-            step_id="custody", 
+            step_id="custody",
             data_schema=schema,
-            description_placeholders={"child": self._data.get(CONF_CHILD_NAME_DISPLAY, "l'enfant")}
+            description_placeholders={"child": self._data.get(CONF_CHILD_NAME_DISPLAY, "l'enfant")},
         )
 
     async def async_step_custom_pattern(self, user_input: dict[str, Any] | None = None) -> FlowResult:
@@ -718,18 +681,12 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         schema_dict = {}
         # Get existing pattern if any
         existing = (self._data.get(CONF_CUSTOM_PATTERN) or "").split(",")
-        weekdays = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"]
         for i in range(1, 15):
-            week_num = 1 if i <= 7 else 2
-            day_idx = (i - 1) % 7
-            label = f"S{week_num} - {weekdays[day_idx]}"
-            default = existing[i-1] == "on" if len(existing) >= i else False
+
+            default = existing[i - 1] == "on" if len(existing) >= i else False
             schema_dict[vol.Optional(f"day_{i}", default=default)] = selector.BooleanSelector()
-            
-        return self.async_show_form(
-            step_id="custom_pattern",
-            data_schema=vol.Schema(schema_dict)
-        )
+
+        return self.async_show_form(step_id="custom_pattern", data_schema=vol.Schema(schema_dict))
 
     async def async_step_schedule(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Modify schedule times and location."""
@@ -743,9 +700,7 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         data = {**self._entry.data, **(self._entry.options or {})}
         schema = vol.Schema(
             {
-                vol.Required(
-                    CONF_ARRIVAL_TIME, default=data.get(CONF_ARRIVAL_TIME, "08:00")
-                ): selector.TimeSelector(),
+                vol.Required(CONF_ARRIVAL_TIME, default=data.get(CONF_ARRIVAL_TIME, "08:00")): selector.TimeSelector(),
                 vol.Required(
                     CONF_DEPARTURE_TIME, default=data.get(CONF_DEPARTURE_TIME, "19:00")
                 ): selector.TimeSelector(),
@@ -872,9 +827,7 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
 
         if user_input:
             exception_id = user_input.get("exception_id")
-            self._data[CONF_EXCEPTIONS_LIST] = [
-                item for item in exceptions if item.get("id") != exception_id
-            ]
+            self._data[CONF_EXCEPTIONS_LIST] = [item for item in exceptions if item.get("id") != exception_id]
             return self.async_create_entry(title="", data=self._data)
 
         schema = vol.Schema(
@@ -895,9 +848,7 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         )
         return self.async_show_form(step_id="exceptions_delete", data_schema=schema)
 
-    async def async_step_exceptions_recurring_add(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_exceptions_recurring_add(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Add a recurring exception."""
         errors: dict[str, str] = {}
         if user_input:
@@ -947,13 +898,9 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional("end_date"): selector.DateSelector(),
             }
         )
-        return self.async_show_form(
-            step_id="exceptions_recurring_add", data_schema=schema, errors=errors
-        )
+        return self.async_show_form(step_id="exceptions_recurring_add", data_schema=schema, errors=errors)
 
-    async def async_step_exceptions_recurring_edit(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_exceptions_recurring_edit(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Select a recurring exception to edit."""
         exceptions = _get_recurring_exceptions(self._data)
         if not exceptions:
@@ -985,9 +932,7 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
         )
         return self.async_show_form(step_id="exceptions_recurring_edit", data_schema=schema)
 
-    async def async_step_exceptions_recurring_edit_form(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_exceptions_recurring_edit_form(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Edit the selected recurring exception."""
         errors: dict[str, str] = {}
         exceptions = _get_recurring_exceptions(self._data)
@@ -1030,19 +975,19 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Required("start_time", default=_normalize_time(selected.get("start_time"))): selector.TimeSelector(),
+                vol.Required(
+                    "start_time", default=_normalize_time(selected.get("start_time"))
+                ): selector.TimeSelector(),
                 vol.Required("end_time", default=_normalize_time(selected.get("end_time"))): selector.TimeSelector(),
-                vol.Optional("start_date", default=_normalize_date(selected.get("start_date"))): selector.DateSelector(),
+                vol.Optional(
+                    "start_date", default=_normalize_date(selected.get("start_date"))
+                ): selector.DateSelector(),
                 vol.Optional("end_date", default=_normalize_date(selected.get("end_date"))): selector.DateSelector(),
             }
         )
-        return self.async_show_form(
-            step_id="exceptions_recurring_edit_form", data_schema=schema, errors=errors
-        )
+        return self.async_show_form(step_id="exceptions_recurring_edit_form", data_schema=schema, errors=errors)
 
-    async def async_step_exceptions_recurring_delete(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_exceptions_recurring_delete(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Delete a recurring exception."""
         exceptions = _get_recurring_exceptions(self._data)
         if not exceptions:
@@ -1054,9 +999,7 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
 
         if user_input:
             exception_id = user_input.get("exception_id")
-            self._data[CONF_EXCEPTIONS_RECURRING] = [
-                item for item in exceptions if item.get("id") != exception_id
-            ]
+            self._data[CONF_EXCEPTIONS_RECURRING] = [item for item in exceptions if item.get("id") != exception_id]
             return self.async_create_entry(title="", data=self._data)
 
         schema = vol.Schema(
@@ -1085,11 +1028,8 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
 
         data = {**self._entry.data, **(self._entry.options or {})}
         # Get reference_year for vacations (separate from custody reference_year)
-        reference_year_default = data.get(
-            CONF_REFERENCE_YEAR_VACATIONS, data.get(CONF_REFERENCE_YEAR, "even")
-        )
         vacation_split_default = data.get(CONF_VACATION_SPLIT_MODE, "odd_first")
-        
+
         schema = vol.Schema(
             {
                 vol.Required(CONF_ZONE, default=data.get(CONF_ZONE, "A")): _zone_selector(),
@@ -1103,9 +1043,7 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_ALSACE_MOSELLE, default=data.get(CONF_ALSACE_MOSELLE, False)
                 ): selector.BooleanSelector(),
-                vol.Required(
-                    CONF_PARENTAL_ROLE, default=data.get(CONF_PARENTAL_ROLE, "none")
-                ): selector.SelectSelector(
+                vol.Required(CONF_PARENTAL_ROLE, default=data.get(CONF_PARENTAL_ROLE, "none")): selector.SelectSelector(
                     selector.SelectSelectorConfig(
                         options=[
                             {"value": "none", "label": "Aucun (Désactivé)"},
@@ -1174,24 +1112,18 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(
                     CONF_CALENDAR_TARGET,
                     default=data.get(CONF_CALENDAR_TARGET, ""),
-                ): selector.EntitySelector(
-                    selector.EntitySelectorConfig(domain="calendar")
-                ),
+                ): selector.EntitySelector(selector.EntitySelectorConfig(domain="calendar")),
                 vol.Optional(
                     CONF_CALENDAR_SYNC_DAYS,
                     default=data.get(CONF_CALENDAR_SYNC_DAYS, 120),
                 ): selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=7, max=365, mode=selector.NumberSelectorMode.BOX, step=1
-                    )
+                    selector.NumberSelectorConfig(min=7, max=365, mode=selector.NumberSelectorMode.BOX, step=1)
                 ),
                 vol.Optional(
                     CONF_CALENDAR_SYNC_INTERVAL_HOURS,
                     default=data.get(CONF_CALENDAR_SYNC_INTERVAL_HOURS, 1),
                 ): selector.NumberSelector(
-                    selector.NumberSelectorConfig(
-                        min=1, max=24, mode=selector.NumberSelectorMode.BOX, step=1
-                    )
+                    selector.NumberSelectorConfig(min=1, max=24, mode=selector.NumberSelectorMode.BOX, step=1)
                 ),
                 vol.Optional(
                     CONF_HOLIDAY_API_URL,

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Callable
+from typing import Any
 
-from homeassistant.components.sensor import SensorEntity, SensorDeviceClass, SensorStateClass
-from homeassistant.const import UnitOfTime
+from homeassistant.components.sensor import SensorDeviceClass, SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import UnitOfTime
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -16,24 +16,24 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import CustodyScheduleCoordinator
-from .schedule import CustodyComputation
 from .const import (
-    ATTR_CUSTODY_TYPE,
     ATTR_CURRENT_PERIOD,
+    ATTR_CUSTODY_TYPE,
     ATTR_DAYS_REMAINING,
+    ATTR_DAYS_UNTIL_VACATION,
     ATTR_NEXT_ARRIVAL,
     ATTR_NEXT_DEPARTURE,
-    ATTR_VACATION_NAME,
+    ATTR_NEXT_VACATION_END,
     ATTR_NEXT_VACATION_NAME,
     ATTR_NEXT_VACATION_START,
-    ATTR_NEXT_VACATION_END,
-    ATTR_DAYS_UNTIL_VACATION,
     ATTR_SCHOOL_HOLIDAYS_RAW,
+    ATTR_VACATION_NAME,
     CONF_CHILD_NAME,
     CONF_CHILD_NAME_DISPLAY,
     CONF_PHOTO,
     DOMAIN,
 )
+from .schedule import CustodyComputation
 
 
 @dataclass(slots=True)
@@ -74,9 +74,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     """Set up Custody Schedule sensors."""
     if DOMAIN not in hass.data or entry.entry_id not in hass.data[DOMAIN]:
         from .const import LOGGER
+
         LOGGER.error("Custody schedule entry %s not found in hass.data", entry.entry_id)
         return
-    
+
     coordinator: CustodyScheduleCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     child_name = entry.data.get(CONF_CHILD_NAME_DISPLAY, entry.data.get(CONF_CHILD_NAME))
 
@@ -144,25 +145,45 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
         """Return formatted datetime string localized for the user."""
         if value is None:
             return None
-        
+
         # Ensure we are in local time
         localized = dt_util.as_local(value)
         time_str = localized.strftime("%H:%M")
-        
+
         # Get language (handle fr-FR, fr-BE, etc.)
         lang = (self.hass.config.language or "en").lower()
-        
+
         if lang.startswith("fr"):
             months = [
-                "janvier", "février", "mars", "avril", "mai", "juin",
-                "juillet", "août", "septembre", "octobre", "novembre", "décembre"
+                "janvier",
+                "février",
+                "mars",
+                "avril",
+                "mai",
+                "juin",
+                "juillet",
+                "août",
+                "septembre",
+                "octobre",
+                "novembre",
+                "décembre",
             ]
             return f"{localized.day} {months[localized.month - 1]} {localized.year} à {time_str}"
-        
+
         # Default to English format
         months_en = [
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
         ]
         return f"{months_en[localized.month - 1]} {localized.day}, {localized.year} at {time_str}"
 

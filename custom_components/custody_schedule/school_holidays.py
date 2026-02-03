@@ -6,23 +6,24 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
-import logging
 
 import aiohttp
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import aiohttp_client
 from homeassistant.util import dt as dt_util
 
 from .const import HOLIDAY_API, LOGGER
 
+
 @dataclass(slots=True)
 class SchoolHoliday:
     """Represent a school holiday period."""
+
     name: str
     zone: str
     start: datetime
     end: datetime
+
 
 class BaseHolidayProvider(ABC):
     """Base class for school holiday providers."""
@@ -34,6 +35,7 @@ class BaseHolidayProvider(ABC):
     @abstractmethod
     async def get_holidays(self, country: str, zone: str, year: int | None = None) -> list[SchoolHoliday]:
         """Fetch holidays for a specific country, zone and year."""
+
 
 class FranceEducationProvider(BaseHolidayProvider):
     """Provider for French school holidays using Education Nationale API."""
@@ -57,7 +59,7 @@ class FranceEducationProvider(BaseHolidayProvider):
         """Fetch holidays from the French API."""
         now = dt_util.now()
         school_years = set()
-        
+
         if year is not None:
             school_years.add(f"{year - 1}-{year}")
             school_years.add(f"{year}-{year + 1}")
@@ -71,16 +73,16 @@ class FranceEducationProvider(BaseHolidayProvider):
 
         normalized_zone = self._normalize_zone(zone)
         all_holidays: list[SchoolHoliday] = []
-        
+
         for school_year in school_years:
             url = HOLIDAY_API.format(zone=normalized_zone, year=school_year)
             try:
                 async with self.session.get(url, timeout=aiohttp.ClientTimeout(total=20)) as resp:
                     resp.raise_for_status()
                     payload: dict[str, Any] = await resp.json()
-                    
+
                     records = payload.get("records", [])
-                    
+
                     # Manual fallback if zone filtering fails in the API
                     if len(records) == 0 and normalized_zone in ["A", "B", "C"]:
                         url_all = (
@@ -103,19 +105,21 @@ class FranceEducationProvider(BaseHolidayProvider):
                         start_str = fields.get("start_date") or fields.get("date_debut")
                         end_str = fields.get("end_date") or fields.get("date_fin")
                         name = fields.get("description") or fields.get("libelle") or "Vacances scolaires"
-                        
+
                         if not start_str or not end_str:
                             continue
-                        
+
                         start = dt_util.parse_datetime(start_str)
                         end = dt_util.parse_datetime(end_str)
-                        
+
                         if not start or not end:
                             continue
 
-                        if year is not None and not (start.year == year or end.year == year or (start.year < year < end.year)):
+                        if year is not None and not (
+                            start.year == year or end.year == year or (start.year < year < end.year)
+                        ):
                             continue
-                        
+
                         all_holidays.append(
                             SchoolHoliday(
                                 name=name,
@@ -145,6 +149,7 @@ class FranceEducationProvider(BaseHolidayProvider):
 
         return sorted(all_holidays, key=lambda h: (h.start, h.end))
 
+
 class OpenHolidaysProvider(BaseHolidayProvider):
     """Provider for BE, CH, LU using OpenHolidays API."""
 
@@ -152,13 +157,13 @@ class OpenHolidaysProvider(BaseHolidayProvider):
         """Fetch holidays from OpenHolidays API."""
         now = dt_util.now()
         target_year = year or now.year
-        
+
         # OpenHolidays API: https://www.openholidaysapi.org/en/
         # Format: /SchoolHolidays?countryIsoCode=BE&languageIsoCode=FR&validFrom=2024-01-01&validTo=2024-12-31
         lang = "FR" if country in ["BE", "CH", "LU"] else "EN"
         valid_from = f"{target_year}-01-01"
         valid_to = f"{target_year + 1}-01-01"
-        
+
         base_url = "https://openholidaysapi.org/SchoolHolidays"
         params = {
             "countryIsoCode": country,
@@ -166,7 +171,7 @@ class OpenHolidaysProvider(BaseHolidayProvider):
             "validFrom": valid_from,
             "validTo": valid_to,
         }
-        
+
         # If zone is specified (Subdivision), add it (Canton for CH, Community for BE)
         if zone and zone not in ["FR", "BE", "CH", "LU", "A", "B", "C", "Corse", "DOM-TOM"]:
             params["subdivisionCode"] = zone
@@ -192,8 +197,9 @@ class OpenHolidaysProvider(BaseHolidayProvider):
                         )
         except Exception as err:
             LOGGER.error("Error fetching from OpenHolidays: %s", err)
-            
+
         return sorted(holidays, key=lambda h: h.start)
+
 
 class CanadaHolidayProvider(BaseHolidayProvider):
     """Provider for Canada/Quebec. Focuses on Statutory Public Holidays for now."""
@@ -205,7 +211,7 @@ class CanadaHolidayProvider(BaseHolidayProvider):
         now = dt_util.now()
         target_year = year or now.year
         url = f"https://canada-holidays.ca/api/v1/provinces/QC?year={target_year}"
-        
+
         holidays = []
         try:
             async with self.session.get(url) as resp:
@@ -221,8 +227,9 @@ class CanadaHolidayProvider(BaseHolidayProvider):
                         holidays.append(SchoolHoliday(name, zone, start, end))
         except Exception as err:
             LOGGER.error("Error fetching from Canada provider: %s", err)
-            
+
         return sorted(holidays, key=lambda h: h.start)
+
 
 class SchoolHolidayClient:
     """Client that delegates to specific country providers."""
@@ -251,7 +258,7 @@ class SchoolHolidayClient:
             provider = self._france_provider
 
         holidays = await provider.get_holidays(country, zone, year)
-        
+
         # Deduplicate
         seen = set()
         unique = []
@@ -260,7 +267,7 @@ class SchoolHolidayClient:
             if k not in seen:
                 seen.add(k)
                 unique.append(h)
-        
+
         self._cache[cache_key] = unique
         return unique
 
@@ -273,7 +280,7 @@ class SchoolHolidayClient:
                 "country": country,
                 "zone": zone,
                 "holidays_count": len(holidays),
-                "holidays": [{"name": h.name, "start": h.start.isoformat()} for h in holidays[:5]]
+                "holidays": [{"name": h.name, "start": h.start.isoformat()} for h in holidays[:5]],
             }
         except Exception as err:
             return {"success": False, "error": str(err)}

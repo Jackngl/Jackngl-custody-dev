@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
 import logging
+from datetime import timedelta
 
 from homeassistant.const import Platform
 
@@ -104,7 +104,6 @@ SUBDIVISIONS: dict[str, dict[str, str]] = {
         "QC": "Québec (Général)",
     },
 }
-
 
 
 CUSTODY_TYPES = {

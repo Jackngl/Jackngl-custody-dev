@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any
 
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.config_entries import ConfigEntry
@@ -18,15 +17,14 @@ from .const import CONF_CHILD_NAME, CONF_CHILD_NAME_DISPLAY, CONF_LOCATION, CONF
 from .schedule import CustodyComputation, CustodyWindow
 
 
-async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
-) -> None:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback) -> None:
     """Set up the calendar entity."""
     if DOMAIN not in hass.data or entry.entry_id not in hass.data[DOMAIN]:
         from .const import LOGGER
+
         LOGGER.error("Custody schedule entry %s not found in hass.data", entry.entry_id)
         return
-    
+
     coordinator: CustodyScheduleCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     child_name = entry.data.get(CONF_CHILD_NAME_DISPLAY, entry.data.get(CONF_CHILD_NAME))
     async_add_entities([CustodyCalendarEntity(coordinator, entry, child_name)])
@@ -62,9 +60,7 @@ class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntit
             return None
 
         now = dt_util.now()
-        upcoming = sorted(
-            (window for window in data.windows if window.end > now), key=lambda window: window.start
-        )
+        upcoming = sorted((window for window in data.windows if window.end > now), key=lambda window: window.start)
         window = upcoming[0] if upcoming else None
         return self._window_to_event(window) if window else None
 
@@ -92,7 +88,7 @@ class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntit
             description = f"Regular custody • {window.label}"
         else:
             description = f"{window.label} • Source: {window.source}"
-        
+
         location = self.coordinator.data.attributes.get(CONF_LOCATION) if self.coordinator.data else None
         summary = f"{self._child_name} • {window.label}".strip()
         return CalendarEvent(

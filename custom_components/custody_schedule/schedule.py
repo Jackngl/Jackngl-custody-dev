@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, date, time, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Any, Iterable
 
 from homeassistant.core import HomeAssistant
@@ -22,62 +22,62 @@ def _easter_date(year: int) -> date:
     h = (19 * a + b - d - g + 15) % 30
     i = c // 4
     k = c % 4
-    l = (32 + 2 * e + 2 * i - h - k) % 7
-    m = (a + 11 * h + 22 * l) // 451
-    month = (h + l - 7 * m + 114) // 31
-    day = ((h + l - 7 * m + 114) % 31) + 1
+    L = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * L) // 451
+    month = (h + L - 7 * m + 114) // 31
+    day = ((h + L - 7 * m + 114) % 31) + 1
     return date(year, month, day)
 
 
 def get_public_holidays(year: int, country: str = "FR", include_alsace_moselle: bool = False) -> set[date]:
     """Return set of public holidays for a given year and country.
-    
+
     Currently supports: France (FR).
     """
     holidays = set()
-    
+
     if country == "FR":
         # Fixed holidays
-        holidays.add(date(year, 1, 1))    # New Year
-        holidays.add(date(year, 5, 1))    # Labor Day
-        holidays.add(date(year, 5, 8))    # Victory 1945
-        holidays.add(date(year, 7, 14))   # National Day
-        holidays.add(date(year, 8, 15))   # Assumption
-        holidays.add(date(year, 11, 1))   # All Saints
+        holidays.add(date(year, 1, 1))  # New Year
+        holidays.add(date(year, 5, 1))  # Labor Day
+        holidays.add(date(year, 5, 8))  # Victory 1945
+        holidays.add(date(year, 7, 14))  # National Day
+        holidays.add(date(year, 8, 15))  # Assumption
+        holidays.add(date(year, 11, 1))  # All Saints
         holidays.add(date(year, 11, 11))  # Armistice
         holidays.add(date(year, 12, 25))  # Christmas
-        
+
         # Alsace-Moselle specific
         if include_alsace_moselle:
             holidays.add(date(year, 12, 26))
-        
+
         # Variable
         easter = _easter_date(year)
-        holidays.add(easter + timedelta(days=1))   # Easter Monday
+        holidays.add(easter + timedelta(days=1))  # Easter Monday
         holidays.add(easter + timedelta(days=39))  # Ascension
         holidays.add(easter + timedelta(days=50))  # Pentecost Monday
-        
+
         if include_alsace_moselle:
             holidays.add(easter - timedelta(days=2))  # Good Friday
-            
+
     return holidays
 
 
 def get_parent_days(year: int, country: str = "FR") -> dict[str, date]:
     """Calculate parent holidays (Mother/Father days).
-    
+
     Currently supports: France (FR).
     """
     # Father's day: 3rd Sunday of June
     first_june = date(year, 6, 1)
     days_to_first_sunday = (6 - first_june.weekday()) % 7
     fathers_day = first_june + timedelta(days=days_to_first_sunday + 14)
-    
+
     # Mother's day: Last Sunday of May.
     last_may = date(year, 5, 31)
     days_back_to_sunday = (last_may.weekday() - 6) % 7
     mothers_day = last_may - timedelta(days=days_back_to_sunday)
-    
+
     # Check for Pentecost (Easter + 49 days)
     # Re-using logic to calculate Easter locally
     a = year % 19
@@ -90,44 +90,40 @@ def get_parent_days(year: int, country: str = "FR") -> dict[str, date]:
     h = (19 * a + b - d - g + 15) % 30
     i = c // 4
     k = c % 4
-    l = (32 + 2 * e + 2 * i - h - k) % 7
-    m = (a + 11 * h + 22 * l) // 451
-    month = (h + l - 7 * m + 114) // 31
-    day = ((h + l - 7 * m + 114) % 31) + 1
+    L = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * L) // 451
+    month = (h + L - 7 * m + 114) // 31
+    day = ((h + L - 7 * m + 114) % 31) + 1
     easter_sunday = date(year, month, day)
-    
+
     pentecost_sunday = easter_sunday + timedelta(days=49)
     if mothers_day == pentecost_sunday:
         mothers_day = mothers_day + timedelta(days=7)
-        
-    return {
-        "mother": mothers_day,
-        "father": fathers_day
-    }
+
+    return {"mother": mothers_day, "father": fathers_day}
+
 
 from .const import (
     ATTR_LOCATION,
     ATTR_NOTES,
     ATTR_ZONE,
     CONF_ALSACE_MOSELLE,
-    CONF_AUTO_PARENT_DAYS,
-    CONF_PARENTAL_ROLE,
     CONF_ARRIVAL_TIME,
+    CONF_AUTO_PARENT_DAYS,
+    CONF_COUNTRY,
     CONF_CUSTOM_PATTERN,
     CONF_CUSTOM_RULES,
     CONF_DEPARTURE_TIME,
     CONF_EXCEPTIONS_RECURRING,
     CONF_LOCATION,
     CONF_NOTES,
+    CONF_PARENTAL_ROLE,
     CONF_REFERENCE_YEAR,
     CONF_REFERENCE_YEAR_CUSTODY,
-    CONF_REFERENCE_YEAR_VACATIONS,
-    CONF_SCHOOL_LEVEL,
     CONF_START_DAY,
     CONF_SUMMER_SPLIT_MODE,
     CONF_VACATION_SPLIT_MODE,
     CONF_ZONE,
-    CONF_COUNTRY,
     CUSTODY_TYPES,
     DEFAULT_COUNTRY,
     LOGGER,
@@ -246,9 +242,12 @@ class CustodyScheduleManager:
         # current_window : fenêtre qui commence avant ou à maintenant et se termine après maintenant
         # Mais exclure les fenêtres qui se terminent dans moins d'1 minute (considérées comme terminées)
         current_window = next(
-            (window for window in windows 
-             if window.start <= now_local < window.end and window.end > now_local + timedelta(minutes=1)), 
-            None
+            (
+                window
+                for window in windows
+                if window.start <= now_local < window.end and window.end > now_local + timedelta(minutes=1)
+            ),
+            None,
         )
         # next_window doit être une fenêtre qui commence dans le futur ET qui se termine dans le futur
         next_window = next((window for window in windows if window.start > now_local and window.end > now_local), None)
@@ -281,7 +280,9 @@ class CustodyScheduleManager:
                     next_arrival = next_window.start if next_window else None
                     # Si on n'a pas de next_window, chercher la prochaine fenêtre future
                     if not next_departure:
-                        next_departure = next((w.end for w in windows if w.end > now_local + timedelta(minutes=1)), None)
+                        next_departure = next(
+                            (w.end for w in windows if w.end > now_local + timedelta(minutes=1)), None
+                        )
                         if next_departure:
                             matching_window = next((w for w in windows if w.end == next_departure), None)
                             if matching_window:
@@ -298,7 +299,9 @@ class CustodyScheduleManager:
                     next_arrival = next_window.start if next_window else None
                     # Si on n'a pas de next_window, chercher la prochaine fenêtre future
                     if not next_departure:
-                        next_departure = next((w.end for w in windows if w.end > now_local + timedelta(minutes=1)), None)
+                        next_departure = next(
+                            (w.end for w in windows if w.end > now_local + timedelta(minutes=1)), None
+                        )
                         if next_departure:
                             matching_window = next((w for w in windows if w.end == next_departure), None)
                             if matching_window:
@@ -312,7 +315,7 @@ class CustodyScheduleManager:
             # et next_departure est la fin de cette même prochaine fenêtre
             next_arrival = next_window.start if next_window else None
             next_departure = next_window.end if next_window else None
-            
+
             # S'assurer que next_departure est toujours dans le futur (avec marge d'1 minute)
             # Normalement next_window.end devrait toujours être dans le futur, mais sécurité supplémentaire
             if next_departure and next_departure <= now_local + timedelta(minutes=1):
@@ -334,9 +337,15 @@ class CustodyScheduleManager:
             days_remaining = max(0, round(delta.total_seconds() / 86400, 2))
 
         period, vacation_name = await self._determine_period(now_local)
-        
+
         # Get next vacation information and raw holidays data
-        next_vacation_name, next_vacation_start, next_vacation_end, days_until_vacation, school_holidays_raw = await self._get_next_vacation(now_local)
+        (
+            next_vacation_name,
+            next_vacation_start,
+            next_vacation_end,
+            days_until_vacation,
+            school_holidays_raw,
+        ) = await self._get_next_vacation(now_local)
 
         attributes = {
             ATTR_LOCATION: self._config.get(CONF_LOCATION),
@@ -362,11 +371,11 @@ class CustodyScheduleManager:
 
     async def _build_windows(self, now: datetime) -> list[CustodyWindow]:
         """Generate presence windows from base pattern and vacation/custom rules.
-        
+
         Two separate planning systems:
         1. Weekend/Pattern planning: Based on custody_type (even_weekends, alternate_week, etc.)
         2. Vacation planning: Based on vacation_rule (first_week_odd_year, first_half, etc.)
-        
+
         Priority: Vacation rules > Custom rules > Normal pattern rules
         Vacation periods completely replace normal pattern windows during their entire duration.
         """
@@ -374,16 +383,16 @@ class CustodyScheduleManager:
         # This creates custody windows during school holidays (e.g., first half, second half)
         # Also creates filter windows that cover the entire vacation period
         vacation_windows = await self._generate_vacation_windows(now)
-        
+
         # Add parental day windows (Mother/Father days) to vacation windows for priority filtering
         parental_windows = self._build_parental_day_windows(now)
         vacation_windows.extend(parental_windows)
-        
+
         # 2. Generate weekend/pattern windows based on custody_type
         # This creates the normal weekend schedule (e.g., even weekends, alternate weekends)
         # Pass vacation_windows to check if weekends/weeks fall during vacations before applying public holidays
         pattern_windows = self._generate_pattern_windows(now, vacation_windows)
-        
+
         # 3. Load custom windows (manual overrides)
         custom_windows = self._load_custom_rules()
 
@@ -391,11 +400,11 @@ class CustodyScheduleManager:
         # Vacation rules have priority: they completely replace normal rules during vacations
         # Filter windows ensure all weekends/weeks during vacations are removed
         filtered_pattern_windows = self._filter_windows_by_vacations(pattern_windows, vacation_windows)
-        
+
         # 5. Separate display windows from filter windows
         # Filter windows are only used for filtering, not displayed in the final schedule
         vacation_display_windows = [w for w in vacation_windows if w.source != "vacation_filter"]
-        
+
         # 6. Merge in priority order: vacation windows (highest), then custom, then filtered pattern
         merged = vacation_display_windows + custom_windows + filtered_pattern_windows
         # Filtrer les fenêtres qui se terminent dans le passé (avec marge de 365 jours pour l'historique)
@@ -405,23 +414,23 @@ class CustodyScheduleManager:
         """Automatically create windows for Mother's day and Father's day."""
         if not self._config.get(CONF_AUTO_PARENT_DAYS, False):
             return []
-            
+
         role = self._config.get(CONF_PARENTAL_ROLE, "none")
         if role == "none":
             return []
-            
+
         windows = []
         # Calculate for current and next year to ensure upcoming ones are visible
         country = self._config.get(CONF_COUNTRY, "FR")
         for year in (now.year, now.year + 1):
             dates = get_parent_days(year, country)
-            
+
             # Mother's Day
             m_day = dates.get("mother")
             if m_day:
                 m_start = dt_util.as_local(datetime.combine(m_day, time(0, 0)))
                 m_end = dt_util.as_local(datetime.combine(m_day, time(23, 59, 59)))
-                
+
                 if role == "mother":
                     windows.append(CustodyWindow(m_start, m_end, "Mother's Day", "special"))
                 elif role == "father":
@@ -432,12 +441,12 @@ class CustodyScheduleManager:
             if f_day:
                 f_start = dt_util.as_local(datetime.combine(f_day, time(0, 0)))
                 f_end = dt_util.as_local(datetime.combine(f_day, time(23, 59, 59)))
-                
+
                 if role == "father":
                     windows.append(CustodyWindow(f_start, f_end, "Father's Day", "special"))
                 elif role == "mother":
                     windows.append(CustodyWindow(f_start, f_end, "Father's Day (Secondary parent)", "vacation_filter"))
-                
+
         return windows
 
     def _build_recurring_windows(self, now: datetime) -> list[CustodyWindow]:
@@ -490,27 +499,27 @@ class CustodyScheduleManager:
                 occ_date += timedelta(days=7)
 
         return windows
-    
+
     def _filter_windows_by_vacations(
         self, pattern_windows: list[CustodyWindow], vacation_windows: list[CustodyWindow]
     ) -> list[CustodyWindow]:
         """Remove or truncate pattern windows that overlap with vacation periods.
-        
+
         Vacations (and special days like Mother's Day) have priority over normal pattern rules.
         Instead of removing the entire window on overlap, we subtract the overlapping part.
         """
         if not vacation_windows:
             return pattern_windows
-        
+
         # Build a list of priority periods (start, end) for quick overlap checking.
         vacation_periods = [(vw.start, vw.end) for vw in vacation_windows if vw.source == "vacation_filter"]
         if not vacation_periods:
             # Fallback to display windows if no filter windows (should not happen for vacations)
             vacation_periods = [(vw.start, vw.end) for vw in vacation_windows]
-        
+
         # Process each priority period one by one, subtracting from the set of pattern windows
         current_active_windows = list(pattern_windows)
-        
+
         for vac_start, vac_end in vacation_periods:
             next_pass_windows = []
             for item in current_active_windows:
@@ -518,52 +527,50 @@ class CustodyScheduleManager:
                 if item.start >= vac_end or item.end <= vac_start:
                     next_pass_windows.append(item)
                     continue
-                
+
                 # 2. Partials overlaps - Subtract the overlapping range
                 # Handle the part before the vacation segment
                 if item.start < vac_start:
-                    next_pass_windows.append(
-                        CustodyWindow(item.start, vac_start, item.label, item.source)
-                    )
-                
+                    next_pass_windows.append(CustodyWindow(item.start, vac_start, item.label, item.source))
+
                 # Handle the part after the vacation segment
                 if item.end > vac_end:
-                    next_pass_windows.append(
-                        CustodyWindow(vac_end, item.end, item.label, item.source)
-                    )
-                    
+                    next_pass_windows.append(CustodyWindow(vac_end, item.end, item.label, item.source))
+
             current_active_windows = next_pass_windows
-            
+
         return current_active_windows
 
     def _is_in_vacation_period(self, check_date: datetime, vacation_windows: list[CustodyWindow]) -> bool:
         """Check if a date falls within any vacation period.
-        
+
         Args:
             check_date: Date to check
             vacation_windows: List of vacation windows (including filter windows)
-        
+
         Returns:
             True if the date is within a vacation period, False otherwise
         """
         if not vacation_windows:
             return False
-        
+
         for vac_window in vacation_windows:
             if vac_window.start <= check_date <= vac_window.end:
                 return True
         return False
 
-    def _generate_pattern_windows(self, now: datetime, vacation_windows: list[CustodyWindow] = None) -> list[CustodyWindow]:
+    def _generate_pattern_windows(
+        self, now: datetime, vacation_windows: list[CustodyWindow] = None
+    ) -> list[CustodyWindow]:
         """Create repeating windows from the selected custody type.
-        
+
         Args:
             now: Current datetime
             vacation_windows: List of vacation windows to check for overlaps (public holidays not applied during vacations)
         """
         if vacation_windows is None:
             vacation_windows = []
-        
+
         custody_type = self._config.get("custody_type", "alternate_week")
         type_def = CUSTODY_TYPES.get(custody_type) or CUSTODY_TYPES["alternate_week"]
         # Use a longer horizon (400 days) to support 365-day calendar sync
@@ -573,29 +580,30 @@ class CustodyScheduleManager:
         if custody_type == "alternate_weekend":
             windows: list[CustodyWindow] = []
             pointer = self._reference_start(now, custody_type)
-            
+
             # Get public holidays for current and next year
             country = self._config.get(CONF_COUNTRY, "FR")
             alsace_moselle = self._config.get(CONF_ALSACE_MOSELLE, False)
-            holidays = get_public_holidays(now.year, country, alsace_moselle) | get_public_holidays(now.year + 1, country, alsace_moselle)
-            
+            holidays = get_public_holidays(now.year, country, alsace_moselle) | get_public_holidays(
+                now.year + 1, country, alsace_moselle
+            )
+
             # Get reference_year to determine parity (even = even weeks, odd = odd weeks)
             reference_year = self._config.get(
                 CONF_REFERENCE_YEAR_CUSTODY, self._config.get(CONF_REFERENCE_YEAR, "even")
             )
             target_parity = 0 if reference_year == "even" else 1  # 0 = even, 1 = odd
-            
+
             # Ajuster le pointer pour commencer avant ou à la date actuelle
             # Si le pointer est trop loin dans le passé, avancer jusqu'à une semaine proche de maintenant
             # On avance de 2 semaines à la fois pour respecter l'alternance
             while pointer < now - timedelta(days=365):
-                old_pointer = pointer
                 pointer += timedelta(days=14)  # Sauter 2 semaines (alternance)
                 # Vérifier que le pointer a toujours la bonne parité
                 if pointer.isocalendar()[1] % 2 != target_parity:
                     # Si on a perdu la parité, ajuster d'une semaine
                     pointer += timedelta(days=7)
-            
+
             while pointer < horizon:
                 iso_week = pointer.isocalendar().week
                 week_parity = iso_week % 2  # 0 = even, 1 = odd
@@ -607,35 +615,35 @@ class CustodyScheduleManager:
                     sunday = pointer + timedelta(days=6)
                     monday = pointer + timedelta(days=7)
                     thursday = pointer + timedelta(days=3)
-                    
+
                     # Default start/end
                     window_start = friday
                     window_end = sunday
                     label_suffix = ""
-                    
+
                     # Check if weekend falls during vacation period
                     # If yes, don't apply public holiday extensions (vacations dominate)
                     weekend_in_vacation = (
-                        self._is_in_vacation_period(friday, vacation_windows) or
-                        self._is_in_vacation_period(sunday, vacation_windows) or
-                        self._is_in_vacation_period(monday, vacation_windows)
+                        self._is_in_vacation_period(friday, vacation_windows)
+                        or self._is_in_vacation_period(sunday, vacation_windows)
+                        or self._is_in_vacation_period(monday, vacation_windows)
                     )
-                    
+
                     # Only apply public holidays if NOT during vacation period
                     if not weekend_in_vacation:
                         friday_is_holiday = friday.date() in holidays
                         monday_is_holiday = monday.date() in holidays
-                        
+
                         if friday_is_holiday:
                             # Holiday on Friday: start Thursday instead
                             window_start = thursday
                             label_suffix = " + Holiday"
-                        
+
                         if monday_is_holiday:
                             # Holiday on Monday: extend to Monday
                             window_end = monday
                             label_suffix = " + Holiday" if not label_suffix else " + Long Weekend"
-                    
+
                     # Get label from custody type definition
                     type_label = CUSTODY_TYPES.get(custody_type, {}).get("label", "Garde")
                     windows.append(
@@ -653,29 +661,30 @@ class CustodyScheduleManager:
         if custody_type == "alternate_week_parity":
             windows: list[CustodyWindow] = []
             pointer = self._reference_start(now, custody_type)
-            
+
             # Get public holidays for current and next year
             country = self._config.get(CONF_COUNTRY, "FR")
             alsace_moselle = self._config.get(CONF_ALSACE_MOSELLE, False)
-            holidays = get_public_holidays(now.year, country, alsace_moselle) | get_public_holidays(now.year + 1, country, alsace_moselle)
-            
+            holidays = get_public_holidays(now.year, country, alsace_moselle) | get_public_holidays(
+                now.year + 1, country, alsace_moselle
+            )
+
             # Get reference_year to determine parity (even = even weeks, odd = odd weeks)
             reference_year = self._config.get(
                 CONF_REFERENCE_YEAR_CUSTODY, self._config.get(CONF_REFERENCE_YEAR, "even")
             )
             target_parity = 0 if reference_year == "even" else 1  # 0 = even, 1 = odd
-            
+
             # Ajuster le pointer pour commencer avant ou à la date actuelle
             # Si le pointer est trop loin dans le passé, avancer jusqu'à une semaine proche de maintenant
             # On avance de 2 semaines à la fois pour respecter l'alternance
             while pointer < now - timedelta(days=365):
-                old_pointer = pointer
                 pointer += timedelta(days=14)  # Sauter 2 semaines (alternance)
                 # Vérifier que le pointer a toujours la bonne parité
                 if pointer.isocalendar()[1] % 2 != target_parity:
                     # Si on a perdu la parité, ajuster d'une semaine
                     pointer += timedelta(days=7)
-            
+
             while pointer < horizon:
                 iso_week = pointer.isocalendar().week
                 week_parity = iso_week % 2  # 0 = even, 1 = odd
@@ -685,20 +694,20 @@ class CustodyScheduleManager:
                     sunday = pointer + timedelta(days=6)
                     next_monday = pointer + timedelta(days=7)
                     previous_friday = pointer - timedelta(days=3)
-                    
+
                     # Default start/end
                     window_start = monday
                     window_end = sunday
                     label_suffix = ""
-                    
+
                     # Check if week falls during vacation period
                     # If yes, don't apply public holiday extensions (vacations dominate)
                     week_in_vacation = (
-                        self._is_in_vacation_period(monday, vacation_windows) or
-                        self._is_in_vacation_period(sunday, vacation_windows) or
-                        self._is_in_vacation_period(next_monday, vacation_windows)
+                        self._is_in_vacation_period(monday, vacation_windows)
+                        or self._is_in_vacation_period(sunday, vacation_windows)
+                        or self._is_in_vacation_period(next_monday, vacation_windows)
                     )
-                    
+
                     # Only apply public holidays if NOT during vacation period
                     if not week_in_vacation:
                         # Check if Monday is a holiday (extend from previous Friday)
@@ -706,17 +715,17 @@ class CustodyScheduleManager:
                         # Check if Friday is a holiday (extend to next Monday)
                         friday = pointer + timedelta(days=4)
                         friday_is_holiday = friday.date() in holidays
-                        
+
                         if monday_is_holiday:
                             # Holiday on Monday: start previous Friday instead
                             window_start = previous_friday
                             label_suffix = " + Holiday"
-                        
+
                         if friday_is_holiday:
                             # Holiday on Friday: extend to next Monday
                             window_end = next_monday
                             label_suffix = " + Holiday" if not label_suffix else " + Long Weekend"
-                    
+
                     # Get label from custody type definition
                     type_label = CUSTODY_TYPES.get(custody_type, {}).get("label", "Garde")
                     windows.append(
@@ -785,7 +794,7 @@ class CustodyScheduleManager:
         holidays = await self._holidays.async_list(country, zone)
         windows: list[CustodyWindow] = []
         # vacation_rule is now automatic based on year parity
-        # For all holidays (including summer), use automatic parity logic: 
+        # For all holidays (including summer), use automatic parity logic:
         # odd year = first part, even year = second part (or vice versa)
         rule = None
         summer_mode = self._config.get(CONF_SUMMER_SPLIT_MODE, "half")
@@ -806,16 +815,11 @@ class CustodyScheduleManager:
                 )
             )
 
-
-
             # Automatic vacation rule based on year parity + split mode
             # Get reference_year to determine which parent gets vacations this year
-            reference_year = self._config.get(
-                CONF_REFERENCE_YEAR_VACATIONS, self._config.get(CONF_REFERENCE_YEAR, "even")
-            )
             split_mode = self._config.get(CONF_VACATION_SPLIT_MODE, "odd_first")
             is_even_year = start.year % 2 == 0
-            
+
             # Determine automatic rule:
             # - split_mode "odd_first": odd years -> first half, even years -> second half
             # - split_mode "odd_second": odd years -> second half, even years -> first half
@@ -833,21 +837,21 @@ class CustodyScheduleManager:
                 # Split the whole summer duration [start, end] into 4 equal segments
                 total_duration = end - start
                 seg_duration = total_duration / 4
-                
+
                 parts = [
                     (start, start + seg_duration),
                     (start + seg_duration, start + 2 * seg_duration),
                     (start + 2 * seg_duration, start + 3 * seg_duration),
-                    (start + 3 * seg_duration, end)
+                    (start + 3 * seg_duration, end),
                 ]
-                
+
                 # Parent with "first_half" rule gets parts 1 and 3
                 # Parent with "second_half" rule gets parts 2 and 4
                 if rule == "first_half":
                     target_parts = [parts[0], parts[2]]
                 else:
                     target_parts = [parts[1], parts[3]]
-                
+
                 for p_start, p_end in target_parts:
                     if p_end > p_start:
                         windows.append(
@@ -952,8 +956,6 @@ class CustodyScheduleManager:
             )
         return windows
 
-
-
     def _load_custom_rules(self) -> list[CustodyWindow]:
         """Transform custom ISO ranges configured via options."""
         custom_rules = self._config.get(CONF_CUSTOM_RULES) or []
@@ -977,9 +979,7 @@ class CustodyScheduleManager:
     def _reference_start(self, now: datetime, custody_type: str) -> datetime:
         """Return the datetime used as anchor for the cycle."""
         reference_year = now.year
-        desired = self._config.get(
-            CONF_REFERENCE_YEAR_CUSTODY, self._config.get(CONF_REFERENCE_YEAR, "even")
-        )
+        desired = self._config.get(CONF_REFERENCE_YEAR_CUSTODY, self._config.get(CONF_REFERENCE_YEAR, "even"))
         if desired == "even" and reference_year % 2 != 0:
             reference_year -= 1
         elif desired == "odd" and reference_year % 2 == 0:
@@ -1123,18 +1123,18 @@ class CustodyScheduleManager:
         LOGGER.debug("Fetching school holidays for country=%s, zone=%s", country, zone)
         holidays = await self._holidays.async_list(country, zone)
         LOGGER.debug("Retrieved %d holidays from API", len(holidays))
-        
+
         if not holidays:
             LOGGER.warning("No holidays found for zone %s, year %s", zone, now.year)
-        
+
         # Sort holidays by effective start date (more relevant than raw API start)
         sorted_holidays = sorted(holidays, key=lambda h: self._effective_holiday_bounds(h)[0])
-        
+
         # Build raw holidays list for debugging/display
         # Filter to only show holidays from current calendar year onwards
         # This includes holidays from current school year and previous school year if they're in current year
         school_holidays_raw = []
-        
+
         weekday_fr = {
             "Monday": "Lundi",
             "Tuesday": "Mardi",
@@ -1170,9 +1170,6 @@ class CustodyScheduleManager:
             )
 
         # vacation_rule is now automatic based on reference_year + split mode
-        reference_year = self._config.get(
-            CONF_REFERENCE_YEAR_VACATIONS, self._config.get(CONF_REFERENCE_YEAR, "even")
-        )
         split_mode = self._config.get(CONF_VACATION_SPLIT_MODE, "odd_first")
         summer_mode = self._config.get(CONF_SUMMER_SPLIT_MODE, "half")
 
@@ -1184,14 +1181,14 @@ class CustodyScheduleManager:
             if is_summer and summer_mode == "quarter":
                 total_duration = eff_end - eff_start
                 seg_duration = total_duration / 4
-                
+
                 parts = [
                     (eff_start, eff_start + seg_duration),
                     (eff_start + seg_duration, eff_start + 2 * seg_duration),
                     (eff_start + 2 * seg_duration, eff_start + 3 * seg_duration),
-                    (eff_start + 3 * seg_duration, eff_end)
+                    (eff_start + 3 * seg_duration, eff_end),
                 ]
-                
+
                 # Rule logic for parity
                 is_even_year = eff_start.year % 2 == 0
                 if split_mode == "odd_second":
@@ -1219,7 +1216,7 @@ class CustodyScheduleManager:
                 rule_for_year = "first_half" if not is_even_year else "second_half"
 
             return (mid, eff_end) if rule_for_year == "second_half" else (eff_start, mid)
-        
+
         # First, check if we're currently in a vacation (effective bounds)
         for holiday in sorted_holidays:
             eff_start, eff_end, _mid = self._effective_holiday_bounds(holiday)
@@ -1232,7 +1229,7 @@ class CustodyScheduleManager:
                     0,
                     school_holidays_raw,
                 )
-        
+
         # Not in vacation, find the next custody segment start
         next_vacation = None
         next_seg_start: datetime | None = None
@@ -1252,19 +1249,19 @@ class CustodyScheduleManager:
                 next_seg_end = seg_end
                 LOGGER.debug("Found next vacation custody segment: %s, start=%s", holiday.name, next_seg_start)
                 break
-        
+
         if not next_vacation:
             LOGGER.warning("No next vacation found after %s. Total holidays: %d", now, len(sorted_holidays))
             if sorted_holidays:
                 LOGGER.debug("Last holiday: %s (ends %s)", sorted_holidays[-1].name, sorted_holidays[-1].end)
             return None, None, None, None, school_holidays_raw
-        
+
         if next_seg_start is None or next_seg_end is None:
             return None, None, None, None, school_holidays_raw
 
         delta = next_seg_start - now
         days_until = max(0, round(delta.total_seconds() / 86400, 2))
-        
+
         return (
             next_vacation.name,
             next_seg_start,
@@ -1272,25 +1269,25 @@ class CustodyScheduleManager:
             days_until,
             school_holidays_raw,
         )
-    
+
     def _adjust_vacation_start(self, official_start: datetime, school_level: str) -> datetime:
         """Adjust vacation start date based on school level.
-        
+
         - Primary: Friday afternoon (departure time)
           - L'API retourne le vendredi à 23h UTC, qui devient samedi 00h en heure locale
           - On extrait la date et on s'assure que c'est un vendredi (si c'est samedi, on recule d'1 jour)
         - Middle/High: Saturday at arrival time
           - Si l'API retourne samedi, on l'utilise directement
           - Sinon, on trouve le samedi suivant
-        
+
         Args:
             official_start: Official vacation start date from API (en heure locale après conversion)
             school_level: "primary", "middle", or "high"
-        
+
         Returns:
             Adjusted start datetime
         """
-        
+
         if school_level == "primary":
             # Primary: Friday afternoon at departure time
             # L'API retourne le vendredi à 23h UTC, qui devient samedi 00h en heure locale
@@ -1298,17 +1295,21 @@ class CustodyScheduleManager:
             date_only = official_start.date()
             weekday = date_only.weekday()  # 0=Monday, 4=Friday, 5=Saturday
             weekday_names = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
-            
-            LOGGER.debug("Adjusting vacation start for primary: official_start=%s (%s), weekday=%d", 
-                        official_start, weekday_names[weekday], weekday)
-            
+
+            LOGGER.debug(
+                "Adjusting vacation start for primary: official_start=%s (%s), weekday=%d",
+                official_start,
+                weekday_names[weekday],
+                weekday,
+            )
+
             # Si c'est samedi (5), c'est que l'API a retourné vendredi 23h UTC qui est devenu samedi 00h local
             # On recule d'1 jour pour avoir le vendredi
             if weekday == 5:  # Saturday
                 date_only = date_only - timedelta(days=1)
                 LOGGER.debug("Was Saturday, adjusted to Friday: %s", date_only)
             # Si c'est déjà vendredi (4), on l'utilise directement
-            
+
             # Créer un nouveau datetime avec la date corrigée et l'heure d'arrivée (vendredi sortie d'école)
             # Pour les vacances, on utilise l'heure d'arrivée car c'est le moment où l'enfant arrive
             friday_datetime = datetime.combine(date_only, self._arrival_time, official_start.tzinfo)
@@ -1334,15 +1335,15 @@ class CustodyScheduleManager:
         if official_end.weekday() == 0 and official_end.hour == 0 and official_end.minute == 0:
             sunday = official_end - timedelta(days=1)
             return self._apply_time(sunday, self._departure_time)
-        
+
         # Also handle cases where it might be Monday at some other time or Sunday at 00:00
         # The key is: if the vacation ends at the start of a Monday, custody ends Sunday evening
-        if official_end.weekday() == 0: # Monday
+        if official_end.weekday() == 0:  # Monday
             sunday = official_end - timedelta(days=official_end.weekday() + 1 if official_end.weekday() < 6 else 0)
             # Actually, just get the Sunday before this Monday
             sunday = official_end - timedelta(days=1)
             return self._apply_time(sunday, self._departure_time)
-            
+
         return self._apply_time(official_end, self._departure_time)
 
     def _evaluate_override(self, now: datetime) -> bool | None:
