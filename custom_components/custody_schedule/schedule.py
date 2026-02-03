@@ -1024,7 +1024,11 @@ class CustodyScheduleManager:
                     CustodyWindow(
                         start=week_start,
                         end=week_end,
-                        label=f"Vacances scolaires - Semaine {'paire' if target_parity == 0 else 'impaire'} {week_start.isocalendar().week}",
+                        label=(
+                            f"Vacances scolaires - Semaine "
+                            f"{'paire' if target_parity == 0 else 'impaire'} "
+                            f"{week_start.isocalendar().week}"
+                        ),
                         source="summer",
                     )
                 )

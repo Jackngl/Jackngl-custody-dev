@@ -73,7 +73,10 @@ VACATION_SPLIT_MODES = ["odd_first", "odd_second"]
 FRENCH_ZONES = ["A", "B", "C", "Corse", "DOM-TOM"]
 FRENCH_ZONES_WITH_CITIES: dict[str, str] = {
     "A": "Zone A — Besançon, Bordeaux, Clermont-Ferrand, Dijon, Grenoble, Limoges, Lyon, Poitiers",
-    "B": "Zone B — Aix-Marseille, Amiens, Lille, Nancy-Metz, Nantes, Nice, Normandie, Orléans-Tours, Reims, Rennes, Strasbourg",
+    "B": (
+        "Zone B — Aix-Marseille, Amiens, Lille, Nancy-Metz, Nantes, Nice, "
+        "Normandie, Orléans-Tours, Reims, Rennes, Strasbourg"
+    ),
     "C": "Zone C — Créteil, Montpellier, Paris, Toulouse, Versailles",
     "Corse": "Corse",
     "DOM-TOM": "DOM-TOM",
