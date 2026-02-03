@@ -53,7 +53,7 @@ from .intent import async_setup_intents
 from .schedule import CustodyComputation, CustodyScheduleManager
 from .school_holidays import SchoolHolidayClient
 
-CONFIG_SCHEMA = cv.config_entry_only_config_schema
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
