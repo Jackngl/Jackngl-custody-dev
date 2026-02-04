@@ -28,16 +28,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
     coordinator: CustodyScheduleCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
     child_name_display = entry.data.get(CONF_CHILD_NAME_DISPLAY, entry.data.get(CONF_CHILD_NAME))
-    child_name_normalized = entry.data.get(
-        CONF_CHILD_NAME, entry.data.get(CONF_CHILD_NAME_DISPLAY)
-    )
-    async_add_entities(
-        [
-            CustodyCalendarEntity(
-                coordinator, entry, child_name_display, child_name_normalized
-            )
-        ]
-    )
+    child_name_normalized = entry.data.get(CONF_CHILD_NAME, entry.data.get(CONF_CHILD_NAME_DISPLAY))
+    async_add_entities([CustodyCalendarEntity(coordinator, entry, child_name_display, child_name_normalized)])
 
 
 class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntity):
