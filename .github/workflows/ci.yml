@@ -85,10 +85,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements_test.txt
+          pip install pytest-cov
 
-      - name: Run Pytest
+      - name: Run Pytest with Coverage
         run: |
-          pytest tests
+          pytest tests --cov=custom_components/custody_schedule --cov-report=term-missing --cov-report=xml
+
+      - name: Upload Coverage Report
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+        continue-on-error: true
 
   hassfest:
     name: Hassfest Validation
@@ -112,3 +120,44 @@ jobs:
         with:
           category: integration
           ignore: brands
+
+  core-compatibility:
+    name: Core Compatibility Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check manifest for Core requirements
+        run: |
+          echo "Checking manifest compatibility with Home Assistant Core..."
+          MANIFEST="custom_components/custody_schedule/manifest.json"
+          
+          # Check for 'version' field (required for custom, forbidden for Core)
+          if grep -q '"version"' "$MANIFEST"; then
+            echo "ℹ️  INFO: 'version' field found (required for custom integration)"
+            echo "    If submitting to Core, this field must be removed."
+          fi
+          
+          # Check for 'integration_type' (will be required for Core)
+          if ! grep -q '"integration_type"' "$MANIFEST"; then
+            echo "⚠️  WARNING: Missing 'integration_type' field"
+            echo "    This will be required for Core integration."
+            echo "    Suggested value: 'service' or 'helper'"
+          else
+            INTEGRATION_TYPE=$(grep -o '"integration_type"[[:space:]]*:[[:space:]]*"[^"]*"' "$MANIFEST" | cut -d'"' -f4)
+            echo "✓ integration_type found: $INTEGRATION_TYPE"
+          fi
+          
+          # Check documentation URL
+          DOC_URL=$(grep -o '"documentation"[[:space:]]*:[[:space:]]*"[^"]*"' "$MANIFEST" | cut -d'"' -f4)
+          if echo "$DOC_URL" | grep -q "home-assistant.io/integrations"; then
+            echo "✓ Documentation URL points to official docs (Core-ready)"
+          else
+            echo "ℹ️  INFO: Documentation URL: $DOC_URL"
+            echo "    For Core submission, should be: https://www.home-assistant.io/integrations/custody_schedule"
+          fi
+          
+          echo ""
+          echo "Summary: Current configuration is optimized for custom integration."
+          echo "No action needed unless planning Core submission."
