@@ -27,8 +27,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         return
 
     coordinator: CustodyScheduleCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
-    child_name = entry.data.get(CONF_CHILD_NAME_DISPLAY, entry.data.get(CONF_CHILD_NAME))
-    async_add_entities([CustodyCalendarEntity(coordinator, entry, child_name)])
+    child_name_display = entry.data.get(CONF_CHILD_NAME_DISPLAY, entry.data.get(CONF_CHILD_NAME))
+    child_name_normalized = entry.data.get(CONF_CHILD_NAME, entry.data.get(CONF_CHILD_NAME_DISPLAY))
+    async_add_entities([CustodyCalendarEntity(coordinator, entry, child_name_display, child_name_normalized)])
 
 
 class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntity):
@@ -37,19 +38,19 @@ class CustodyCalendarEntity(CoordinatorEntity[CustodyComputation], CalendarEntit
     _attr_has_entity_name = True
     _attr_translation_key = "calendar"
 
-    def __init__(self, coordinator: CustodyScheduleCoordinator, entry: ConfigEntry, child_name: str) -> None:
+    def __init__(self, coordinator: CustodyScheduleCoordinator, entry: ConfigEntry, child_name_display: str, child_name_normalized: str) -> None:
         super().__init__(coordinator)
         self._entry = entry
-        self._child_name = child_name
+        self._child_name = child_name_display
         self._attr_unique_id = f"{entry.entry_id}_calendar"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
-            name=child_name,
+            name=child_name_display,
             manufacturer="Custody",
             model="Custody Planning",
-            sw_version="1.8.0",
+            sw_version="1.8.31",
         )
-        self.entity_id = f"calendar.{slugify(child_name)}_calendar"
+        self.entity_id = f"calendar.{slugify(child_name_normalized)}_calendar"
         photo = entry.data.get(CONF_PHOTO)
         if photo:
             self._attr_entity_picture = photo

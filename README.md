@@ -1,6 +1,6 @@
 # 👨‍👩‍👧‍👦 Custody (Custody Schedule)
 
-![Version](https://img.shields.io/badge/version-1.8.30-blue.svg)
+![Version](https://img.shields.io/badge/version-1.8.31-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 
@@ -410,11 +410,12 @@ Pour chaque enfant configuré, les entités suivantes sont créées automatiquem
 | `sensor.<nom>_days_until_vacation` | Sensor | Jours jusqu'aux vacances |
 | `calendar.<nom>_calendar` | Calendar | Calendrier avec toutes les périodes |
 
-**Note :** `<nom>` correspond au nom de l'enfant en minuscules avec les espaces remplacés par des underscores. Par exemple, pour un enfant nommé "Lucas", les entités seront :
-- `binary_sensor.lucas_presence`
-- `device_tracker.lucas_tracker`
-- `sensor.lucas_next_arrival`
-- etc.
+**Note :** `<nom>` correspond au nom de l'enfant normalisé en minuscules avec les espaces remplacés par des underscores. Les entity_id sont toujours en anglais (ASCII uniquement), même si le nom d'affichage contient des accents. Par exemple :
+- Pour un enfant nommé "Lucas" : `binary_sensor.lucas_presence`, `calendar.lucas_calendar`, etc.
+- Pour un enfant nommé "Sarah-Léa" : `binary_sensor.sarah_lea_presence`, `calendar.sarah_lea_calendar`, etc.
+- Pour un enfant nommé "François" : `binary_sensor.francois_presence`, `calendar.francois_calendar`, etc.
+
+Les noms affichés dans l'interface Home Assistant sont localisés selon la langue configurée (français/anglais) et préservent les caractères originaux du nom.
 
 **Attributs disponibles :**
 - `vacation_name` : Nom de la période de vacances en cours

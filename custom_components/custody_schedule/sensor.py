@@ -78,9 +78,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
         return
 
     coordinator: CustodyScheduleCoordinator = hass.data[DOMAIN][entry.entry_id]["coordinator"]
-    child_name = entry.data.get(CONF_CHILD_NAME_DISPLAY, entry.data.get(CONF_CHILD_NAME))
+    child_name_display = entry.data.get(CONF_CHILD_NAME_DISPLAY, entry.data.get(CONF_CHILD_NAME))
+    child_name_normalized = entry.data.get(CONF_CHILD_NAME, entry.data.get(CONF_CHILD_NAME_DISPLAY))
 
-    entities = [CustodyScheduleSensor(coordinator, entry, definition, child_name) for definition in SENSORS]
+    entities = [CustodyScheduleSensor(coordinator, entry, definition, child_name_display, child_name_normalized) for definition in SENSORS]
     async_add_entities(entities)
 
 
@@ -94,7 +95,8 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
         coordinator: CustodyScheduleCoordinator,
         entry: ConfigEntry,
         definition: SensorDefinition,
-        child_name: str,
+        child_name_display: str,
+        child_name_normalized: str,
     ) -> None:
         super().__init__(coordinator)
         self._definition = definition
@@ -107,12 +109,12 @@ class CustodyScheduleSensor(CoordinatorEntity[CustodyComputation], SensorEntity)
         self._attr_native_unit_of_measurement = definition.unit
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
-            name=child_name,
+            name=child_name_display,
             manufacturer="Custody",
             model="Custody Planning",
-            sw_version="1.8.7",
+            sw_version="1.8.31",
         )
-        self.entity_id = f"sensor.{slugify(child_name)}_{definition.key}"
+        self.entity_id = f"sensor.{slugify(child_name_normalized)}_{definition.key}"
         photo = entry.data.get(CONF_PHOTO)
         if photo:
             self._attr_entity_picture = photo
