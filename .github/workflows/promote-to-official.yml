@@ -8,6 +8,9 @@ on:
 jobs:
   promote:
     runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://github.com/Jackngl/custody
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -15,12 +18,85 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.OFFICIAL_REPO_TOKEN }}
 
-      - name: Push to Official Repository
-        env:
-          OFFICIAL_TOKEN: ${{ secrets.OFFICIAL_REPO_TOKEN }}
+      - name: Configure Git
         run: |
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
-          git remote add official "https://x-access-token:${OFFICIAL_TOKEN}@github.com/Jackngl/custody.git"
-          git push official main --force
-          git push official --tags --force
+
+      - name: Add official remote
+        run: |
+          git remote add official "https://x-access-token:${{ secrets.OFFICIAL_REPO_TOKEN }}@github.com/Jackngl/custody.git"
+          git fetch official
+
+      - name: Validate fast-forward merge
+        id: validate
+        run: |
+          echo "::group::Checking if push would be fast-forward"
+          
+          # Check if main can be fast-forwarded
+          BEHIND=$(git rev-list --count main..official/main 2>/dev/null || echo "0")
+          AHEAD=$(git rev-list --count official/main..main 2>/dev/null || echo "0")
+          
+          echo "Commits behind official: $BEHIND"
+          echo "Commits ahead of official: $AHEAD"
+          
+          if [ "$BEHIND" -gt 0 ]; then
+            echo "::error::Local branch is behind official/main by $BEHIND commits"
+            echo "::error::Cannot push safely. Please pull latest changes first."
+            echo "diverged=true" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          echo "✓ Safe to push (fast-forward possible)"
+          echo "diverged=false" >> $GITHUB_OUTPUT
+          echo "::endgroup::"
+
+      - name: Push to official repository
+        if: steps.validate.outputs.diverged == 'false'
+        run: |
+          echo "::group::Pushing to official repository"
+          
+          # Push main branch (NO --force)
+          if git push official main; then
+            echo "✓ Successfully pushed main branch"
+          else
+            echo "::error::Failed to push main branch"
+            exit 1
+          fi
+          
+          # Push tags (NO --force)
+          if git push official --tags; then
+            echo "✓ Successfully pushed tags"
+          else
+            echo "::warning::Failed to push some tags (may already exist)"
+          fi
+          
+          echo "::endgroup::"
+
+      - name: Verify promotion
+        run: |
+          echo "::group::Verifying promotion"
+          git fetch official
+          
+          LOCAL_SHA=$(git rev-parse main)
+          REMOTE_SHA=$(git rev-parse official/main)
+          
+          if [ "$LOCAL_SHA" = "$REMOTE_SHA" ]; then
+            echo "✓ Promotion verified successfully"
+            echo "Official repository is now at: $REMOTE_SHA"
+          else
+            echo "::error::Promotion verification failed"
+            echo "Local SHA:  $LOCAL_SHA"
+            echo "Remote SHA: $REMOTE_SHA"
+            exit 1
+          fi
+          echo "::endgroup::"
+
+      - name: Rollback instructions
+        if: failure()
+        run: |
+          echo "::error::Promotion failed. To rollback manually:"
+          echo "1. Go to https://github.com/Jackngl/custody"
+          echo "2. Check the commit history to identify the issue"
+          echo "3. If needed, reset to previous known good commit"
+          echo "4. Force push is NOT recommended - fix the issue and re-run this workflow"
