@@ -7,7 +7,7 @@
   <img src="icon.png" alt="Custody Icon" width="128"/>
 </div>
 
-![Version](https://img.shields.io/badge/version-1.8.35-blue.svg)
+![Version](https://img.shields.io/badge/version-1.8.37-blue.svg)
 =======
 ![Version](https://img.shields.io/badge/version-1.8.37-blue.svg)
 >>>>>>> 91f2cb1d28625c49b97ca691d7394f1d438237b2
