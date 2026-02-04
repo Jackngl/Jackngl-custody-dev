@@ -240,10 +240,10 @@
     },
     "sensor": {
       "next_arrival": {
-        "name": "Prochaine arrivée"
+        "name": "Arrivée prévue"
       },
       "next_departure": {
-        "name": "Prochain départ"
+        "name": "Départ prévu"
       },
       "days_remaining": {
         "name": "Jours restants"
