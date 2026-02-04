@@ -17,64 +17,32 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Debug - Show environment
-        run: |
-          echo "::group::Environment Info"
-          echo "Repository: ${{ github.repository }}"
-          echo "Ref: ${{ github.ref }}"
-          echo "SHA: ${{ github.sha }}"
-          echo "Actor: ${{ github.actor }}"
-          echo "Event: ${{ github.event_name }}"
-          echo "::endgroup::"
-
       - name: Configure Git
         run: |
-          echo "::group::Configuring Git"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git config --list | grep -E "(user.name|user.email)"
-          echo "::endgroup::"
 
       - name: Auto-increment version
         if: "!contains(github.event.head_commit.message, '[skip version]')"
         run: |
-          echo "::group::Auto-incrementing version"
-          echo "Checking manifest file: custom_components/custody_schedule/manifest.json"
           if [ ! -f "custom_components/custody_schedule/manifest.json" ]; then
             echo "ERROR: manifest.json not found!"
-            ls -la custom_components/custody_schedule/ || echo "Directory does not exist"
             exit 1
           fi
 
           # Check if manifest was manually modified in the last commit
-          # We use git show to see files changed in HEAD
           if git show --name-only --format="" HEAD | grep -q "custom_components/custody_schedule/manifest.json"; then
-            echo "ℹ️ Manifest file was manually modified in this commit."
-            echo "Skipping auto-increment to respect the manual version."
-
-            # Extract current version to ensure README badge is synced
+            echo "ℹ️ Manifest manually modified - syncing README badge"
             CURRENT_VERSION=$(python3 -c "import json, pathlib; print(json.loads(pathlib.Path('custom_components/custody_schedule/manifest.json').read_text(encoding='utf-8')).get('version', ''))")
-            echo "Detected manual version: $CURRENT_VERSION"
-
-            echo "Syncing README badge (if needed)..."
             python3 scripts/update_version.py "$CURRENT_VERSION"
           else
-            echo "ℹ️ Manifest not modified. Running auto-increment..."
+            echo "ℹ️ Running auto-increment"
             python3 scripts/update_version.py
           fi
-
-          echo ""
-          echo "Final manifest:"
-          cat custom_components/custody_schedule/manifest.json
-          echo ""
-          echo "Final README badge (first 3 lines):"
-          head -n 3 README.md || echo "README.md not found"
-          echo "::endgroup::"
 
       - name: Read version from manifest
         id: version
         run: |
-          echo "::group::Reading version from manifest"
           VERSION=$(python3 << 'PYTHON_SCRIPT'
           import json
           import pathlib
@@ -83,70 +51,37 @@ jobs:
           print(data.get('version', '').strip())
           PYTHON_SCRIPT
           )
-          echo "Extracted version: '$VERSION'"
           if [ -z "$VERSION" ]; then
             echo "ERROR: Version not found in manifest" >&2
             exit 1
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Version: $VERSION"
-          echo "::endgroup::"
 
       - name: Commit and push version increment
         run: |
-          echo "::group::Committing and pushing version increment"
           git add custom_components/custody_schedule/manifest.json README.md
           if git diff --staged --quiet; then
-            echo "No version change to commit (version already incremented)"
+            echo "No version change to commit"
           else
-            echo "Committing version increment..."
-            git commit -m "chore: auto-increment version to ${{ steps.version.outputs.version }}" || {
-              echo "WARNING: Failed to commit version increment (may already be committed)"
-              exit 0
-            }
-            echo "Pushing version increment commit..."
-            git push origin HEAD:main || {
-              echo "WARNING: Failed to push version increment (may already be pushed)"
-            }
-            echo "✓ Version increment committed and pushed (manifest.json + README.md badge)"
+            git commit -m "chore: auto-increment version to ${{ steps.version.outputs.version }}" || exit 0
+            git push origin HEAD:main || echo "WARNING: Failed to push version increment"
+            echo "✓ Version increment committed and pushed"
           fi
-          echo "::endgroup::"
-
-      - name: Fetch all tags
-        run: |
-          echo "::group::Fetching tags"
-          echo "Fetching all tags from remote..."
-          git fetch --tags --force || echo "WARNING: git fetch --tags failed"
-          echo "Local tags:"
-          git tag -l | tail -10 || echo "No tags found"
-          echo "Remote tags:"
-          git ls-remote --tags origin | tail -10 || echo "No remote tags found"
-          echo "::endgroup::"
 
       - name: Check if tag exists
         id: check_tag
         run: |
-          echo "::group::Checking if tag exists"
+          git fetch --tags --force
           TAG_NAME="v${{ steps.version.outputs.version }}"
-          echo "Checking for tag: $TAG_NAME"
-          # Check locally
-          if git rev-parse "$TAG_NAME" >/dev/null 2>&1; then
-            echo "Tag $TAG_NAME already exists locally"
-            git show "$TAG_NAME" --no-patch --format="%H %s" || true
+          # Check if tag exists locally or remotely
+          if git rev-parse "$TAG_NAME" >/dev/null 2>&1 || git ls-remote --tags origin "$TAG_NAME" | grep -q "$TAG_NAME"; then
+            echo "Tag $TAG_NAME already exists"
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Tag $TAG_NAME does not exist locally"
-            # Check on remote
-            if git ls-remote --tags origin "$TAG_NAME" | grep -q "$TAG_NAME"; then
-              echo "Tag $TAG_NAME exists on remote"
-              echo "exists=true" >> "$GITHUB_OUTPUT"
-            else
-              echo "Tag $TAG_NAME does not exist, will create it"
-              echo "exists=false" >> "$GITHUB_OUTPUT"
-            fi
+            echo "Tag $TAG_NAME will be created"
+            echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
-          echo "Tag exists: ${{ steps.check_tag.outputs.exists }}"
-          echo "::endgroup::"
 
       - name: Create and push tag
         id: create_and_push_tag
@@ -183,53 +118,8 @@ jobs:
           fi
           echo "::endgroup::"
 
-      - name: Check if release exists
-        id: check_release
-        run: |
-          echo "::group::Checking if release exists"
-          TAG_NAME="v${{ steps.version.outputs.version }}"
-          API_URL="https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME"
-          echo "Checking release for tag: $TAG_NAME"
-          echo "API URL: $API_URL"
-
-          RESPONSE=$(curl -s -w "\n%{http_code}" \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "$API_URL" 2>&1)
-
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | head -n-1)
-
-          echo "HTTP Response Code: $HTTP_CODE"
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "✓ Release $TAG_NAME already exists"
-            echo "$BODY" | jq -r '.name, .tag_name, .published_at' 2>/dev/null || echo "Response: $BODY"
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          elif [ "$HTTP_CODE" = "404" ]; then
-            echo "Release $TAG_NAME does not exist (404), will create it"
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "⚠ WARNING: Unexpected response code $HTTP_CODE"
-            echo "Response body: $BODY"
-            echo "Will attempt to create release anyway"
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
-          echo "Release exists: ${{ steps.check_release.outputs.exists }}"
-          echo "::endgroup::"
-
-      - name: Debug - Before creating release
-        if: steps.check_release.outputs.exists == 'false'
-        run: |
-          echo "::group::Creating GitHub Release"
-          TAG_NAME="v${{ steps.version.outputs.version }}"
-          echo "Creating release for tag: $TAG_NAME"
-          echo "Repository: ${{ github.repository }}"
-          echo "GITHUB_TOKEN available: $([ -n "${{ secrets.GITHUB_TOKEN }}" ] && echo "yes" || echo "no")"
-          echo "::endgroup::"
-
       - name: Create GitHub Release
-        id: create_release
-        if: steps.check_release.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false'
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.version }}
@@ -243,73 +133,4 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
 
-      - name: Check release creation result
-        if: steps.check_release.outputs.exists == 'false'
-        run: |
-          echo "::group::Release Creation Result"
-          if [ "${{ steps.create_release.outcome }}" = "success" ]; then
-            echo "✓ Release creation step completed successfully"
-          elif [ "${{ steps.create_release.outcome }}" = "failure" ]; then
-            echo "✗ Release creation step failed"
-            echo "Exit code: ${{ steps.create_release.conclusion }}"
-          else
-            echo "⚠ Release creation step outcome: ${{ steps.create_release.outcome }}"
-          fi
-          echo "::endgroup::"
-
-      - name: Verify release creation
-        if: steps.check_release.outputs.exists == 'false'
-        id: verify_release
-        run: |
-          echo "::group::Verifying release creation"
-          TAG_NAME="v${{ steps.version.outputs.version }}"
-          echo "Waiting 3 seconds for release to be created..."
-          sleep 3
-          API_URL="https://api.github.com/repos/${{ github.repository }}/releases/tags/$TAG_NAME"
-          echo "Checking: $API_URL"
-          RESPONSE=$(curl -s -w "\n%{http_code}" \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "$API_URL" 2>&1)
-          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-          BODY=$(echo "$RESPONSE" | head -n-1)
-
-          echo "HTTP Response Code: $HTTP_CODE"
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "✓ Release $TAG_NAME created successfully"
-            RELEASE_URL=$(echo "$BODY" | jq -r '.html_url' 2>/dev/null || echo "")
-            if [ -n "$RELEASE_URL" ]; then
-              echo "Release URL: $RELEASE_URL"
-            fi
-            echo "$BODY" | jq -r '.name, .tag_name, .published_at' 2>/dev/null || echo "Response: $BODY"
-          else
-            echo "✗ Release creation may have failed (HTTP $HTTP_CODE)"
-            echo "Response: $BODY"
-            echo "This might be normal if the release was just created and GitHub hasn't indexed it yet"
-            exit 1
-          fi
-          echo "::endgroup::"
-
-      - name: Final status
-        if: always()
-        run: |
-          echo "::group::Final Status"
-          echo "Job status: ${{ job.status }}"
-          echo "Tag exists: ${{ steps.check_tag.outputs.exists }}"
-          echo "Release exists: ${{ steps.check_release.outputs.exists }}"
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "✓ Workflow completed successfully"
-          else
-            echo "✗ Workflow failed"
-            echo "Failed steps:"
-            echo "- Check tag: ${{ steps.check_tag.outcome }}"
-            CREATE_TAG_OUTCOME="${{ steps.create_and_push_tag.outcome }}"
-            echo "- Create tag: ${CREATE_TAG_OUTCOME:-N/A}"
-            echo "- Check release: ${{ steps.check_release.outcome }}"
-            echo "- Create release: ${{ steps.create_release.outcome }}"
-            VERIFY_RELEASE_OUTCOME="${{ steps.verify_release.outcome }}"
-            echo "- Verify release: ${VERIFY_RELEASE_OUTCOME:-N/A}"
-          fi
-          echo "::endgroup::"
