@@ -11,6 +11,8 @@
 
 <img src="icon.png" alt="Custody Schedule Icon" width="128"/>
 
+[🇫🇷 Version française](README.fr.md) | [🇬🇧 English version](README.md)
+
 </div>
 
 ---
@@ -828,6 +830,22 @@ Merci à :
 - La communauté Home Assistant pour son support
 - Le ministère de l'Éducation nationale pour l'API des vacances scolaires
 - Tous les parents en garde alternée qui utilisent cette intégration
+
+---
+
+## 📚 Documentation supplémentaire
+
+Pour des guides de configuration détaillés, consultez :
+
+### Français
+- **[Guide de Configuration - Garde Classique](README_CONFIG_GARDE.fr.md)** - Configurer les weekends et semaines alternées
+- **[Guide de Configuration - Vacances Scolaires](README_CONFIG_VACANCES.fr.md)** - Configurer les règles de vacances scolaires
+- **[Guide des Entités](README_ENTITES.fr.md)** - Référence complète de toutes les entités et leur utilisation
+
+### English
+- **[Regular Custody Configuration Guide](README_CONFIG_GARDE.md)** - Configure weekends and alternate weeks
+- **[School Holidays Configuration Guide](README_CONFIG_VACANCES.md)** - Configure school holiday rules
+- **[Entities Guide](README_ENTITES.md)** - Complete reference of all entities and their usage
 
 ---
 

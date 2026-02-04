@@ -1,425 +1,425 @@
-# 📖 Guide de Configuration - Garde Classique (Weekends/Semaines)
+# 📖 Configuration Guide - Regular Custody (Weekends/Weeks)
 
-Ce guide explique comment configurer la **garde classique** (weekends et semaines alternées) dans l'application Custody.
+[🇫🇷 Version française](README_CONFIG_GARDE.fr.md) | [🇬🇧 English version](README_CONFIG_GARDE.md)
 
-> ⚠️ **Important** : 
-> - Ce guide concerne **uniquement la garde classique** (hors vacances scolaires)
-> - Les **vacances scolaires** sont configurées séparément et ont **priorité absolue** sur la garde classique
-> - Les **jours fériés** (vendredi/lundi) étendent automatiquement les weekends de garde classique
-> - Pour les vacances scolaires, voir la documentation séparée des règles de vacances
+This guide explains how to configure **regular custody** (alternate weekends and weeks) in the Custody application.
 
----
-
-## 📋 Table des matières
-
-1. [Séparation garde classique / vacances scolaires](#séparation-garde-classique--vacances-scolaires)
-2. [Types de garde disponibles](#types-de-garde-disponibles)
-3. [Configuration de base](#configuration-de-base)
-4. [Types de garde détaillés](#types-de-garde-détaillés)
-5. [Gestion des jours fériés](#gestion-des-jours-fériés)
-6. [Exemples de configuration](#exemples-de-configuration)
+> ⚠️ **Important**: 
+> - This guide concerns **regular custody only** (outside school holidays)
+> - **School holidays** are configured separately and have **absolute priority** over regular custody
+> - **Public holidays** (Friday/Monday) automatically extend regular custody weekends
+> - For school holidays, see the separate holiday rules documentation
 
 ---
 
-## 🔀 Séparation garde classique / vacances scolaires
+## 📋 Table of Contents
 
-L'application sépare clairement **deux systèmes de garde indépendants** :
+1. [Separation of regular custody / school holidays](#separation-of-regular-custody--school-holidays)
+2. [Available custody types](#available-custody-types)
+3. [Basic configuration](#basic-configuration)
+4. [Detailed custody types](#detailed-custody-types)
+5. [Public holiday management](#public-holiday-management)
+6. [Configuration examples](#configuration-examples)
 
-### 1. **Garde classique** (ce guide)
-- **Configuration** : Masque de saisie "Garde classique (weekends/semaines)"
-- **Période** : Hors vacances scolaires uniquement
-- **Fonctionnalités** :
-  - Weekends alternés, semaines alternées, rythmes 2-2-3, etc.
-  - Extension automatique avec jours fériés (vendredi/lundi)
-  - Basé sur cycles ou parité ISO des semaines
+---
 
-### 2. **Vacances scolaires** (documentation séparée)
-- **Configuration** : Masque de saisie "Vacances scolaires"
-- **Période** : Pendant les vacances scolaires uniquement
-- **Fonctionnalités** :
-  - Règles par moitié, par semaine, par parité d'année
-  - Calcul automatique du milieu exact des vacances
-  - Priorité absolue sur la garde classique
+## 🔀 Separation of regular custody / school holidays
 
-### ⚠️ Règle de priorité
+The application clearly separates **two independent custody systems**:
+
+### 1. **Regular custody** (this guide)
+- **Configuration**: "Regular custody (weekends/weeks)" input form
+- **Period**: Outside school holidays only
+- **Features**:
+  - Alternate weekends, alternate weeks, 2-2-3 patterns, etc.
+  - Automatic extension with public holidays (Friday/Monday)
+  - Based on cycles or ISO week parity
+
+### 2. **School holidays** (separate documentation)
+- **Configuration**: "School holidays" input form
+- **Period**: During school holidays only
+- **Features**:
+  - Rules by half, by week, by year parity
+  - Automatic calculation of exact holiday midpoint
+  - Absolute priority over regular custody
+
+### ⚠️ Priority Rule
 
 ```
-Vacances scolaires > Jours fériés > Garde classique
+School holidays > Public holidays > Regular custody
 ```
 
-- **Pendant les vacances** : Seules les règles de vacances s'appliquent
-- **Hors vacances** : La garde classique s'applique, avec extension fériée si applicable
-- **Jours fériés pendant vacances** : Ignorés (les vacances priment déjà)
+- **During holidays**: Only holiday rules apply
+- **Outside holidays**: Regular custody applies, with holiday extension if applicable
+- **Public holidays during holidays**: Ignored (holidays already take priority)
 
 ---
 
----
+## 🎯 Available Custody Types
 
-## 🎯 Types de garde disponibles
+The application supports **6 custody types** for weekends and weeks:
 
-L'application supporte **6 types de garde** pour les weekends et semaines :
-
-| Type | Code | Description | Cycle | Utilisation |
-|------|------|-------------|-------|-------------|
-| **Semaines alternées (1/1)** | `alternate_week` | Garde hebdomadaire sur 2 semaines (14j) alternées | 14 jours | Garde hebdomadaire alternée classique (basée sur date de référence) |
-| **Semaines alternées** | `alternate_week_parity` | Garde selon parité ISO des semaines (pair/impair via année de référence) | 7 jours | Basé sur la parité ISO des semaines |
-| **Week-ends alternés** | `alternate_weekend` | Garde selon parité ISO des semaines (pair/impair via année de référence) | 7 jours | Basé sur la parité ISO des semaines |
-| **2-2-3** | `two_two_three` | Garde 2 jours, pause 2 jours, garde 3 jours | 7 jours | Rythme hebdomadaire régulier |
-| **2-2-5-5** | `two_two_five_five` | Garde 2 jours, pause 2 jours, garde 5 jours, pause 5 jours | 14 jours | Rythme bi-hebdomadaire |
-| **Personnalisé** | `custom` | Règles personnalisées définies manuellement | Variable | Cas spécifiques |
+| Type | Code | Description | Cycle | Usage |
+|------|------|-------------|-------|-------|
+| **Alternate weeks (1/1)** | `alternate_week` | Weekly custody over 2 alternating weeks (14 days) | 14 days | Classic alternating weekly custody (based on reference date) |
+| **Alternate weeks** | `alternate_week_parity` | Custody based on ISO week parity (even/odd via reference year) | 7 days | Based on ISO week parity |
+| **Alternate weekends** | `alternate_weekend` | Custody based on ISO week parity (even/odd via reference year) | 7 days | Based on ISO week parity |
+| **2-2-3** | `two_two_three` | Custody 2 days, break 2 days, custody 3 days | 7 days | Regular weekly pattern |
+| **2-2-5-5** | `two_two_five_five` | Custody 2 days, break 2 days, custody 5 days, break 5 days | 14 days | Bi-weekly pattern |
+| **Custom** | `custom` | Manually defined custom rules | Variable | Specific cases |
 
 ---
 
-## ⚙️ Configuration de base
+## ⚙️ Basic Configuration
 
-### Champs obligatoires
+### Required Fields
 
-#### 1. **Type de garde** (`custody_type`)
-- **Description** : Définit le rythme de garde (weekends pairs, alternés, etc.)
-- **Valeurs** : Voir [Types de garde disponibles](#types-de-garde-disponibles)
-- **Exemple** : `"alternate_weekend"` pour les weekends des semaines paires/impaires
+#### 1. **Custody Type** (`custody_type`)
+- **Description**: Defines the custody pattern (even weekends, alternating, etc.)
+- **Values**: See [Available custody types](#available-custody-types)
+- **Example**: `"alternate_weekend"` for even/odd week weekends
 
-#### 2. **Mon année de garde (parité)** (`reference_year_custody`)
-- **Description** : Détermine si vous avez la garde les années paires ou impaires (pour les week-ends/semaines).
-- **Valeurs** :
-  - `"even"` : Vous avez la garde lors des semaines ISO paires (2024, 2026, ...).
-  - `"odd"` : Vous avez la garde lors des semaines ISO impaires (2025, 2027, ...).
-- **Note** : Dans l'interface utilisateur, ces valeurs sont affichées comme "Paire" et "Impaire", mais la valeur de configuration réelle est `"even"` ou `"odd"`.
-- **Note** : Ce champ calibre l'alternance de base. Les vacances scolaires alternent ensuite automatiquement chaque année à partir de cette base.
+#### 2. **My Custody Year (Parity)** (`reference_year_custody`)
+- **Description**: Determines whether you have custody on even or odd years (for weekends/weeks).
+- **Values**:
+  - `"even"`: You have custody during ISO even weeks (2024, 2026, ...).
+  - `"odd"`: You have custody during ISO odd weeks (2025, 2027, ...).
+- **Note**: In the user interface, these values are displayed as "Even" and "Odd", but the actual configuration value is `"even"` or `"odd"`.
+- **Note**: This field calibrates the base alternation. School holidays then automatically alternate each year from this base.
 
-#### 3. **Heure d'arrivée** (`arrival_time`)
-- **Description** : Heure à laquelle vous récupérez l'enfant
-- **Format** : `HH:MM` (ex: `16:15`)
-- **Utilisation** : Vendredi après l'école pour les weekends
-- **Exemple** : `"16:15"` (sortie d'école primaire)
+#### 3. **Arrival Time** (`arrival_time`)
+- **Description**: Time when you pick up the child
+- **Format**: `HH:MM` (e.g., `16:15`)
+- **Usage**: Friday after school for weekends
+- **Example**: `"16:15"` (primary school dismissal)
 
-#### 4. **Heure de départ** (`departure_time`)
-- **Description** : Heure à laquelle vous ramenez l'enfant
-- **Format** : `HH:MM` (ex: `19:00`)
-- **Utilisation** : Dimanche soir pour les weekends
-- **Exemple** : `"19:00"` (dimanche soir)
+#### 4. **Departure Time** (`departure_time`)
+- **Description**: Time when you return the child
+- **Format**: `HH:MM` (e.g., `19:00`)
+- **Usage**: Sunday evening for weekends
+- **Example**: `"19:00"` (Sunday evening)
 
-### Champs optionnels
+### Optional Fields
 
-#### 5. **Jour de départ** (`start_day`)
-- **Description** : Jour marquant le début de votre semaine de garde (généralement le lundi).
-- **Valeurs** : `"monday"`, `"tuesday"`, `"wednesday"`, `"thursday"`, `"friday"`, `"saturday"`, `"sunday"`
-- **Utilisation** : 
-  - ✅ **Utilisé pour** : `alternate_week`, `two_two_three`, `two_two_five_five`, `custom`
-- ❌ **Non utilisé pour** : `alternate_weekend`, `alternate_week_parity` (basé sur la parité ISO via `reference_year_custody`)
-- **Défaut** : `"monday"`
-- **Note** : Pour les week-ends/semaines parité ISO, le cycle est **toujours ancré au lundi** (champ masqué dans l'interface)
+#### 5. **Start Day** (`start_day`)
+- **Description**: Day marking the start of your custody week (usually Monday).
+- **Values**: `"monday"`, `"tuesday"`, `"wednesday"`, `"thursday"`, `"friday"`, `"saturday"`, `"sunday"`
+- **Usage**: 
+  - ✅ **Used for**: `alternate_week`, `two_two_three`, `two_two_five_five`, `custom`
+- ❌ **Not used for**: `alternate_weekend`, `alternate_week_parity` (based on ISO parity via `reference_year_custody`)
+- **Default**: `"monday"`
+- **Note**: For ISO parity weekends/weeks, the cycle is **always anchored to Monday** (field hidden in interface)
 
-#### 6. **Niveau scolaire** (`school_level`)
-- **Description** : Niveau scolaire de l'enfant (affecte les horaires de sortie)
-- **Valeurs** :
-  - `"primary"` : Primaire (sortie généralement 16:15)
-  - `"middle"` : Collège
-  - `"high"` : Lycée
-- **Défaut** : `"primary"`
+#### 6. **School Level** (`school_level`)
+- **Description**: Child's school level (affects dismissal times)
+- **Values**:
+  - `"primary"`: Primary (dismissal usually 16:15)
+  - `"middle"`: Middle school
+  - `"high"`: High school
+- **Default**: `"primary"`
 
-#### 7. **Lieu d'échange** (`location`)
-- **Description** : Lieu où se fait l'échange de garde
-- **Format** : Texte libre
-- **Exemple** : `"École élémentaire"`, `"Domicile"`
+#### 7. **Exchange Location** (`location`)
+- **Description**: Location where custody exchange takes place
+- **Format**: Free text
+- **Example**: `"Elementary School"`, `"Home"`
 
 ---
 
-## 📅 Types de garde détaillés
+## 📅 Detailed Custody Types
 
-### 1. Week-ends alternés (`alternate_weekend`)
+### 1. Alternate Weekends (`alternate_weekend`)
 
-**Fonctionnement** :
-- Garde selon la **parité ISO des semaines** (paires ou impaires)
-- La parité est déterminée par le champ `reference_year_custody` :
-  - `reference_year_custody: "even"` → garde les weekends des semaines ISO **paires** (S2, S4, S6, S8, ...)
-  - `reference_year_custody: "odd"` → garde les weekends des semaines ISO **impaires** (S1, S3, S5, S7, ...)
-- Basé sur le numéro ISO de la semaine (pas sur un cycle personnalisé)
-- **Le champ "Jour de départ du cycle" n'est pas utilisé** (masqué dans l'interface)
+**How it works**:
+- Custody based on **ISO week parity** (even or odd)
+- Parity is determined by the `reference_year_custody` field:
+  - `reference_year_custody: "even"` → custody on ISO **even** week weekends (S2, S4, S6, S8, ...)
+  - `reference_year_custody: "odd"` → custody on ISO **odd** week weekends (S1, S3, S5, S7, ...)
+- Based on ISO week number (not a custom cycle)
+- **The "Cycle start day" field is not used** (hidden in interface)
 
-**Configuration** :
+**Configuration**:
 ```yaml
 custody_type: "alternate_weekend"
-reference_year_custody: "even"  # "even" = weekends semaines paires, "odd" = weekends semaines impaires
-arrival_time: "16:15"  # Vendredi sortie école
-departure_time: "19:00"  # Dimanche soir
-# start_day n'est pas utilisé pour ce type
+reference_year_custody: "even"  # "even" = even week weekends, "odd" = odd week weekends
+arrival_time: "16:15"  # Friday school dismissal
+departure_time: "19:00"  # Sunday evening
+# start_day is not used for this type
 ```
 
-**Exemple** (`reference_year_custody: "even"` = weekends semaines paires) :
-- Semaine ISO 18 (paire) → ✅ Garde
-- Semaine ISO 19 (impaire) → ❌ Pas de garde
-- Semaine ISO 20 (paire) → ✅ Garde
+**Example** (`reference_year_custody: "even"` = even week weekends):
+- ISO Week 18 (even) → ✅ Custody
+- ISO Week 19 (odd) → ❌ No custody
+- ISO Week 20 (even) → ✅ Custody
 
-**Calendrier type (Mai 2025, `reference_year_custody: "even"`)** :
-- ✅ S18 : Ven 02/05 16:15 → Dim 04/05 19:00
-- ❌ S19 : Pas de garde
-- ✅ S20 : Ven 16/05 16:15 → Dim 18/05 19:00
-- ❌ S21 : Pas de garde
-- ✅ S22 : Ven 30/05 16:15 → Dim 01/06 19:00
+**Sample Calendar (May 2025, `reference_year_custody: "even"`)**:
+- ✅ S18: Fri 02/05 16:15 → Sun 04/05 19:00
+- ❌ S19: No custody
+- ✅ S20: Fri 16/05 16:15 → Sun 18/05 19:00
+- ❌ S21: No custody
+- ✅ S22: Fri 30/05 16:15 → Sun 01/06 19:00
 
 ---
 
-### 2. Semaines alternées (`alternate_week`)
+### 2. Alternate Weeks (`alternate_week`)
 
-**Fonctionnement** :
-- Garde **une semaine complète sur deux** (cycle de 14 jours)
-- Cycle : 7 jours "on" + 7 jours "off"
-- Utilise le champ `start_day` pour déterminer le jour de départ
+**How it works**:
+- Custody **one full week out of two** (14-day cycle)
+- Cycle: 7 days "on" + 7 days "off"
+- Uses the `start_day` field to determine start day
 
-**Configuration** :
+**Configuration**:
 ```yaml
 custody_type: "alternate_week"
 reference_year_custody: "even"
-start_day: "monday"  # Début de la semaine de garde
+start_day: "monday"  # Start of custody week
 arrival_time: "08:00"
 departure_time: "19:00"
 ```
 
-**Exemple de cycle** :
-- Semaine 1 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
-- Semaine 2 : ❌ Pas de garde
-- Semaine 3 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
+**Example cycle**:
+- Week 1: ✅ Mon 08:00 → Sun 19:00 (7 days)
+- Week 2: ❌ No custody
+- Week 3: ✅ Mon 08:00 → Sun 19:00 (7 days)
 
 ---
 
-### 3. Semaines alternées (`alternate_week_parity`)
+### 3. Alternate Weeks (`alternate_week_parity`)
 
-**Fonctionnement** :
-- Garde selon la **parité ISO des semaines** (paires ou impaires)
-- La parité est déterminée par le champ `reference_year_custody` :
-  - `reference_year_custody: "even"` → garde les semaines ISO **paires**
-  - `reference_year_custody: "odd"` → garde les semaines ISO **impaires**
-- Cycle : 7 jours (une semaine complète)
-- **Ne nécessite pas** le champ `start_day` (basé sur la parité ISO)
+**How it works**:
+- Custody based on **ISO week parity** (even or odd)
+- Parity is determined by the `reference_year_custody` field:
+  - `reference_year_custody: "even"` → custody on ISO **even** weeks
+  - `reference_year_custody: "odd"` → custody on ISO **odd** weeks
+- Cycle: 7 days (one full week)
+- **Does not require** the `start_day` field (based on ISO parity)
 
-**Configuration** :
+**Configuration**:
 ```yaml
 custody_type: "alternate_week_parity"
-reference_year_custody: "even"  # "even" = semaines paires, "odd" = semaines impaires
+reference_year_custody: "even"  # "even" = even weeks, "odd" = odd weeks
 arrival_time: "08:00"
 departure_time: "19:00"
 ```
 
-**Exemple de cycle** (`reference_year_custody: "even"` = semaines paires) :
-- Semaine ISO 2 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
-- Semaine ISO 3 : ❌ Pas de garde
-- Semaine ISO 4 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
-- Semaine ISO 5 : ❌ Pas de garde
+**Example cycle** (`reference_year_custody: "even"` = even weeks):
+- ISO Week 2: ✅ Mon 08:00 → Sun 19:00 (7 days)
+- ISO Week 3: ❌ No custody
+- ISO Week 4: ✅ Mon 08:00 → Sun 19:00 (7 days)
+- ISO Week 5: ❌ No custody
 
-**Différence avec `alternate_week`** :
-- `alternate_week` : Basé sur une date de référence et un cycle de 14 jours (1 semaine sur 2)
-- `alternate_week_parity` : Basé sur la parité ISO des semaines (toutes les semaines paires ou impaires selon `reference_year_custody`)
+**Difference from `alternate_week`**:
+- `alternate_week`: Based on a reference date and a 14-day cycle (1 week out of 2)
+- `alternate_week_parity`: Based on ISO week parity (all even or odd weeks according to `reference_year_custody`)
 
 ---
 
-### 5. Rythme 2-2-3 (`two_two_three`)
+### 4. 2-2-3 Pattern (`two_two_three`)
 
-**Fonctionnement** :
-- Garde **2 jours**, pause **2 jours**, garde **3 jours** (cycle de 7 jours)
-- Pattern répété chaque semaine
-- Utilise le champ `start_day` pour déterminer le jour de départ du cycle
+**How it works**:
+- Custody **2 days**, break **2 days**, custody **3 days** (7-day cycle)
+- Pattern repeated each week
+- Uses the `start_day` field to determine cycle start day
 
-**Configuration** :
+**Configuration**:
 ```yaml
 custody_type: "two_two_three"
 reference_year_custody: "even"
-start_day: "monday"  # Jour de départ du cycle
+start_day: "monday"  # Cycle start day
 arrival_time: "08:00"
 departure_time: "19:00"
 ```
 
-**Exemple de cycle (7 jours)** :
-- Jours 1-2 : ✅ Garde (ex: Lun-Mar)
-- Jours 3-4 : ❌ Pas de garde (ex: Mer-Jeu)
-- Jours 5-7 : ✅ Garde (ex: Ven-Dim)
-- Puis le cycle recommence
+**Example cycle (7 days)**:
+- Days 1-2: ✅ Custody (e.g., Mon-Tue)
+- Days 3-4: ❌ No custody (e.g., Wed-Thu)
+- Days 5-7: ✅ Custody (e.g., Fri-Sun)
+- Then cycle repeats
 
-**Calendrier type** :
+**Sample Calendar**:
 ```
-Semaine 1 :
-  ✅ Lun 08:00 → Mar 19:00 (2 jours)
-  ❌ Mer-Jeu (pas de garde)
-  ✅ Ven 08:00 → Dim 19:00 (3 jours)
+Week 1:
+  ✅ Mon 08:00 → Tue 19:00 (2 days)
+  ❌ Wed-Thu (no custody)
+  ✅ Fri 08:00 → Sun 19:00 (3 days)
 
-Semaine 2 :
-  ✅ Lun 08:00 → Mar 19:00 (2 jours)
-  ❌ Mer-Jeu (pas de garde)
-  ✅ Ven 08:00 → Dim 19:00 (3 jours)
+Week 2:
+  ✅ Mon 08:00 → Tue 19:00 (2 days)
+  ❌ Wed-Thu (no custody)
+  ✅ Fri 08:00 → Sun 19:00 (3 days)
 ```
 
 ---
 
-### 5. Rythme 2-2-5-5 (`two_two_five_five`)
+### 5. 2-2-5-5 Pattern (`two_two_five_five`)
 
-**Fonctionnement** :
-- Garde **2 jours**, pause **2 jours**, garde **5 jours**, pause **5 jours** (cycle de 14 jours)
-- Pattern répété toutes les 2 semaines
-- Utilise le champ `start_day` pour déterminer le jour de départ du cycle
+**How it works**:
+- Custody **2 days**, break **2 days**, custody **5 days**, break **5 days** (14-day cycle)
+- Pattern repeated every 2 weeks
+- Uses the `start_day` field to determine cycle start day
 
-**Configuration** :
+**Configuration**:
 ```yaml
 custody_type: "two_two_five_five"
 reference_year_custody: "even"
-start_day: "monday"  # Jour de départ du cycle
+start_day: "monday"  # Cycle start day
 arrival_time: "08:00"
 departure_time: "19:00"
 ```
 
-**Exemple de cycle (14 jours)** :
-- Jours 1-2 : ✅ Garde (ex: Lun-Mar)
-- Jours 3-4 : ❌ Pas de garde (ex: Mer-Jeu)
-- Jours 5-9 : ✅ Garde (ex: Ven-Mar suivant)
-- Jours 10-14 : ❌ Pas de garde
-- Puis le cycle recommence
+**Example cycle (14 days)**:
+- Days 1-2: ✅ Custody (e.g., Mon-Tue)
+- Days 3-4: ❌ No custody (e.g., Wed-Thu)
+- Days 5-9: ✅ Custody (e.g., Fri-Following Tue)
+- Days 10-14: ❌ No custody
+- Then cycle repeats
 
-**Calendrier type** :
+**Sample Calendar**:
 ```
-Semaine 1 :
-  ✅ Lun 08:00 → Mar 19:00 (2 jours)
-  ❌ Mer-Jeu (pas de garde)
-  ✅ Ven 08:00 → Mar suivant 19:00 (5 jours)
+Week 1:
+  ✅ Mon 08:00 → Tue 19:00 (2 days)
+  ❌ Wed-Thu (no custody)
+  ✅ Fri 08:00 → Following Tue 19:00 (5 days)
 
-Semaine 2 :
-  ❌ Mer-Dim (pas de garde, 5 jours)
+Week 2:
+  ❌ Wed-Sun (no custody, 5 days)
 
-Semaine 3 :
-  ✅ Lun 08:00 → Mar 19:00 (2 jours)
-  ❌ Mer-Jeu (pas de garde)
-  ✅ Ven 08:00 → Mar suivant 19:00 (5 jours)
+Week 3:
+  ✅ Mon 08:00 → Tue 19:00 (2 days)
+  ❌ Wed-Thu (no custody)
+  ✅ Fri 08:00 → Following Tue 19:00 (5 days)
   ...
 ```
 
 ---
 
-### 6. Personnalisé (`custom`)
+### 6. Custom (`custom`)
 
-**Fonctionnement** :
-- Règles de garde définies manuellement via les exceptions ou règles personnalisées
-- Permet de créer des patterns spécifiques non couverts par les types standards
-- Nécessite une configuration manuelle des périodes
+**How it works**:
+- Custody rules defined manually via exceptions or custom rules
+- Allows creating specific patterns not covered by standard types
+- Requires manual period configuration
 
-**Configuration** :
+**Configuration**:
 ```yaml
 custody_type: "custom"
-# Les périodes sont définies via les règles personnalisées dans les options
+# Periods are defined via custom rules in options
 ```
 
-**Utilisation** :
-- Accédez aux options de l'intégration
-- Utilisez les règles personnalisées pour définir vos périodes
-- Ou utilisez le service `set_manual_dates` pour définir des périodes spécifiques
+**Usage**:
+- Access integration options
+- Use custom rules to define your periods
+- Or use the `set_manual_dates` service to define specific periods
 
 ---
 
-## 🎉 Gestion des jours fériés
+## 🎉 Public Holiday Management
 
-L'application **étend automatiquement** les weekends et semaines de garde lorsqu'un jour férié tombe sur un vendredi ou un lundi.
+The application **automatically extends** custody weekends and weeks when a public holiday falls on a Friday or Monday.
 
-> ⚠️ **Important** : Les extensions de jours fériés **ne s'appliquent PAS** si le weekend ou la semaine tombe pendant une **période de vacances scolaires**. Les vacances scolaires ont priorité absolue et utilisent leur propre logique.
+> ⚠️ **Important**: Public holiday extensions **do NOT apply** if the weekend or week falls during a **school holiday period**. School holidays have absolute priority and use their own logic.
 
-### Règles d'extension
+### Extension Rules
 
-| Situation | Garde normale | Garde avec férié |
-|-----------|---------------|------------------|
-| **Lundi férié** | Ven 16:15 → Dim 19:00 | Ven 16:15 → **Lun 19:00** |
-| **Vendredi férié** | Ven 16:15 → Dim 19:00 | **Jeu 16:15** → Dim 19:00 |
-| **Pont (les deux)** | Ven 16:15 → Dim 19:00 | **Jeu 16:15 → Lun 19:00** |
+| Situation | Normal Custody | Custody with Holiday |
+|-----------|---------------|---------------------|
+| **Monday holiday** | Fri 16:15 → Sun 19:00 | Fri 16:15 → **Mon 19:00** |
+| **Friday holiday** | Fri 16:15 → Sun 19:00 | **Thu 16:15** → Sun 19:00 |
+| **Bridge (both)** | Fri 16:15 → Sun 19:00 | **Thu 16:15 → Mon 19:00** |
 
-### Exemples
+### Examples
 
-**Exemple 1 : Lundi de Pâques (21 avril 2025)**
+**Example 1: Easter Monday (April 21, 2025)**
 ```
-Weekend S16 (semaine paire) :
-- Normal : Ven 18/04 16:15 → Dim 20/04 19:00
-- Avec férié : Ven 18/04 16:15 → Lun 21/04 19:00 ✅
-```
-
-**Exemple 2 : Vendredi 15 août (Assomption)**
-```
-Weekend S33 (semaine paire) :
-- Normal : Ven 15/08 16:15 → Dim 17/08 19:00
-- Avec férié : Jeu 14/08 16:15 → Dim 17/08 19:00 ✅
+Weekend S16 (even week):
+- Normal: Fri 18/04 16:15 → Sun 20/04 19:00
+- With holiday: Fri 18/04 16:15 → Mon 21/04 19:00 ✅
 ```
 
-**Exemple 3 : Pont (Vendredi + Lundi fériés)**
+**Example 2: Friday August 15 (Assumption)**
 ```
-Weekend avec pont :
-- Normal : Ven 16:15 → Dim 19:00
-- Avec pont : Jeu 16:15 → Lun 19:00 ✅ (4 jours de garde)
+Weekend S33 (even week):
+- Normal: Fri 15/08 16:15 → Sun 17/08 19:00
+- With holiday: Thu 14/08 16:15 → Sun 17/08 19:00 ✅
 ```
 
-### Labels dans le calendrier
+**Example 3: Bridge (Friday + Monday holidays)**
+```
+Weekend with bridge:
+- Normal: Fri 16:15 → Sun 19:00
+- With bridge: Thu 16:15 → Mon 19:00 ✅ (4 days of custody)
+```
 
-Les événements de garde affichent automatiquement les extensions :
-- `Garde - Week-ends semaines paires + Lundi férié`
-- `Garde - Week-ends semaines paires + Vendredi férié`
-- `Garde - Week-ends semaines paires + Pont`
-- `Garde - Semaines alternées - semaines paires + Lundi férié`
-- `Garde - Semaines alternées - semaines paires + Vendredi férié`
+### Calendar Labels
+
+Custody events automatically display extensions:
+- `Custody - Even week weekends + Monday holiday`
+- `Custody - Even week weekends + Friday holiday`
+- `Custody - Even week weekends + Bridge`
+- `Custody - Alternate weeks - even weeks + Monday holiday`
+- `Custody - Alternate weeks - even weeks + Friday holiday`
 
 ---
 
-## 📊 Tableau récapitulatif des types de garde
+## 📊 Custody Types Summary Table
 
-| Type | Cycle | Utilise start_day | Utilise reference_year_custody | Jours fériés |
-|------|-------|-------------------|------------------------|--------------|
-| `alternate_week` | 14 jours | ✅ Oui | ✅ Oui | ❌ Non |
-| `alternate_week_parity` | 7 jours | ❌ Non | ✅ Oui (détermine parité) | ✅ Oui |
-| `alternate_weekend` | 7 jours | ❌ Non | ✅ Oui (détermine parité) | ✅ Oui |
-| `two_two_three` | 7 jours | ✅ Oui | ✅ Oui | ❌ Non |
-| `two_two_five_five` | 14 jours | ✅ Oui | ✅ Oui | ❌ Non |
-| `custom` | Variable | ✅ Oui | ✅ Oui | ❌ Non |
+| Type | Cycle | Uses start_day | Uses reference_year_custody | Public Holidays |
+|------|-------|----------------|----------------------------|-----------------|
+| `alternate_week` | 14 days | ✅ Yes | ✅ Yes | ❌ No |
+| `alternate_week_parity` | 7 days | ❌ No | ✅ Yes (determines parity) | ✅ Yes |
+| `alternate_weekend` | 7 days | ❌ No | ✅ Yes (determines parity) | ✅ Yes |
+| `two_two_three` | 7 days | ✅ Yes | ✅ Yes | ❌ No |
+| `two_two_five_five` | 14 days | ✅ Yes | ✅ Yes | ❌ No |
+| `custom` | Variable | ✅ Yes | ✅ Yes | ❌ No |
 
-**Note** : Les types de garde basés sur la parité ISO (`alternate_weekend`, `alternate_week_parity`) utilisent `reference_year_custody` pour déterminer la parité (pair/impair) et bénéficient de l'extension automatique avec les jours fériés, **uniquement hors vacances scolaires**.
+**Note**: Custody types based on ISO parity (`alternate_weekend`, `alternate_week_parity`) use `reference_year_custody` to determine parity (even/odd) and benefit from automatic extension with public holidays, **only outside school holidays**.
 
 ---
 
-## 📝 Exemples de configuration
+## 📝 Configuration Examples
 
-### Exemple 1 : Weekends pairs (configuration recommandée)
+### Example 1: Even Weekends (Recommended Configuration)
 
-**Situation** : Vous avez la garde tous les weekends des semaines paires.
+**Situation**: You have custody every even week weekend.
 
 ```yaml
 # Configuration
 custody_type: "alternate_weekend"
 reference_year_custody: "even"
-arrival_time: "16:15"      # Vendredi sortie école
-departure_time: "19:00"    # Dimanche soir
+arrival_time: "16:15"      # Friday school dismissal
+departure_time: "19:00"    # Sunday evening
 school_level: "primary"
-location: "École élémentaire"
+location: "Elementary School"
 
-# Résultat (Mai 2025)
-# ✅ S18 : Ven 02/05 16:15 → Dim 04/05 19:00
-# ❌ S19 : Pas de garde
-# ✅ S20 : Ven 16/05 16:15 → Dim 18/05 19:00
-# ❌ S21 : Pas de garde
-# ✅ S22 : Ven 30/05 16:15 → Dim 01/06 19:00
+# Result (May 2025)
+# ✅ S18: Fri 02/05 16:15 → Sun 04/05 19:00
+# ❌ S19: No custody
+# ✅ S20: Fri 16/05 16:15 → Sun 18/05 19:00
+# ❌ S21: No custody
+# ✅ S22: Fri 30/05 16:15 → Sun 01/06 19:00
 ```
 
-### Exemple 2 : Semaines alternées
+### Example 2: Alternate Weeks
 
-**Situation** : Garde une semaine complète sur deux, début le lundi.
+**Situation**: Custody one full week out of two, starting Monday.
 
 ```yaml
 # Configuration
 custody_type: "alternate_week"
 reference_year_custody: "even"
 start_day: "monday"
-arrival_time: "08:00"      # Lundi matin
-departure_time: "19:00"    # Dimanche soir
+arrival_time: "08:00"      # Monday morning
+departure_time: "19:00"    # Sunday evening
 school_level: "primary"
 
-# Résultat (cycle de 14 jours)
-# Semaine 1 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
-# Semaine 2 : ❌ Pas de garde
-# Semaine 3 : ✅ Lun 08:00 → Dim 19:00 (7 jours)
+# Result (14-day cycle)
+# Week 1: ✅ Mon 08:00 → Sun 19:00 (7 days)
+# Week 2: ❌ No custody
+# Week 3: ✅ Mon 08:00 → Sun 19:00 (7 days)
 ```
 
-### Exemple 3 : Rythme 2-2-3
+### Example 3: 2-2-3 Pattern
 
-**Situation** : Garde 2 jours, pause 2 jours, garde 3 jours, cycle hebdomadaire.
+**Situation**: Custody 2 days, break 2 days, custody 3 days, weekly cycle.
 
 ```yaml
 # Configuration
@@ -430,17 +430,17 @@ arrival_time: "08:00"
 departure_time: "19:00"
 school_level: "primary"
 
-# Résultat (cycle de 7 jours, répété chaque semaine)
-# Semaine 1 :
-#   ✅ Lun 08:00 → Mar 19:00 (2 jours)
-#   ❌ Mer-Jeu (pas de garde)
-#   ✅ Ven 08:00 → Dim 19:00 (3 jours)
-# Semaine 2 : Même pattern
+# Result (7-day cycle, repeated each week)
+# Week 1:
+#   ✅ Mon 08:00 → Tue 19:00 (2 days)
+#   ❌ Wed-Thu (no custody)
+#   ✅ Fri 08:00 → Sun 19:00 (3 days)
+# Week 2: Same pattern
 ```
 
-### Exemple 4 : Rythme 2-2-5-5
+### Example 4: 2-2-5-5 Pattern
 
-**Situation** : Garde 2 jours, pause 2 jours, garde 5 jours, pause 5 jours, cycle bi-hebdomadaire.
+**Situation**: Custody 2 days, break 2 days, custody 5 days, break 5 days, bi-weekly cycle.
 
 ```yaml
 # Configuration
@@ -451,105 +451,103 @@ arrival_time: "08:00"
 departure_time: "19:00"
 school_level: "primary"
 
-# Résultat (cycle de 14 jours)
-# Semaine 1 :
-#   ✅ Lun 08:00 → Mar 19:00 (2 jours)
-#   ❌ Mer-Jeu (pas de garde)
-#   ✅ Ven 08:00 → Mar suivant 19:00 (5 jours)
-# Semaine 2 :
-#   ❌ Mer-Dim (pas de garde, 5 jours)
-# Puis le cycle recommence
+# Result (14-day cycle)
+# Week 1:
+#   ✅ Mon 08:00 → Tue 19:00 (2 days)
+#   ❌ Wed-Thu (no custody)
+#   ✅ Fri 08:00 → Following Tue 19:00 (5 days)
+# Week 2:
+#   ❌ Wed-Sun (no custody, 5 days)
+# Then cycle repeats
 ```
 
 ---
 
-## ⚠️ Notes importantes
+## ⚠️ Important Notes
 
-### Séparation des configurations
+### Configuration Separation
 
-L'application utilise **deux masques de saisie distincts** :
+The application uses **two distinct input forms**:
 
-1. **Masque "Garde classique"** :
-   - Type de garde (alternate_week, alternate_weekend, etc.)
-   - Année de référence
-   - Horaires d'arrivée/départ
-   - Jour de départ du cycle
-   - Niveau scolaire
-   - Lieu d'échange
-   - **+ Extension automatique avec jours fériés**
+1. **"Regular Custody" Form**:
+   - Custody type (alternate_week, alternate_weekend, etc.)
+   - Reference year
+   - Arrival/departure times
+   - Cycle start day
+   - School level
+   - Exchange location
+   - **+ Automatic extension with public holidays**
 
-2. **Masque "Vacances scolaires"** :
-   - Zone scolaire (A/B/C)
-   - Répartition des moitiés
-   - **Découpage été** : choisissez entre "2 Moitiés" (juillet/août) ou "4 Quinzaines" (alternance tous les 15j).
-   - **Calcul équitable** : l'été est divisé en parts égales basées sur les dates réelles des vacances.
+2. **"School Holidays" Form**:
+   - School zone (A/B/C)
+   - Half distribution
+   - **Summer split**: choose between "2 Halves" (July/August) or "4 Fortnights" (alternating every 15 days).
+   - **Fair calculation**: summer is divided into equal parts based on actual holiday dates.
 
-### Priorité des règles
+### Rule Priority
 
-1. **Vacances scolaires** (priorité absolue)
-   - Pendant les vacances, les règles de garde classique sont **complètement ignorées**
-   - Les jours fériés pendant les vacances sont également ignorés
-   - Seules les règles de vacances s'appliquent
-   - **Configuré dans le masque "Vacances scolaires"**
+1. **School holidays** (absolute priority)
+   - During holidays, regular custody rules are **completely ignored**
+   - Public holidays during holidays are also ignored
+   - Only holiday rules apply
+   - **Configured in the "School Holidays" form**
 
-2. **Jours fériés** (extension des weekends)
-   - S'appliquent uniquement aux weekends de garde classique
-   - N'ont aucun effet pendant les vacances scolaires
-   - **Géré automatiquement** dans la garde classique
+2. **Public holidays** (weekend extension)
+   - Apply only to regular custody weekends
+   - Have no effect during school holidays
+   - **Automatically managed** in regular custody
 
-3. **Garde classique** (weekends/semaines)
-   - S'applique uniquement hors vacances scolaires
-   - Respecte les jours fériés pour l'extension
-   - **Configuré dans le masque "Garde classique"**
+3. **Regular custody** (weekends/weeks)
+   - Applies only outside school holidays
+   - Respects public holidays for extension
+   - **Configured in the "Regular Custody" form**
 
-### Champ "Jour de départ du cycle"
+### "Cycle Start Day" Field
 
-- ✅ **Utilisé pour** : 
-  - `alternate_week` (semaines alternées)
-  - `two_two_three` (rythme 2-2-3)
-  - `two_two_five_five` (rythme 2-2-5-5)
-  - `custom` (personnalisé)
-- ❌ **Non utilisé pour** : `alternate_weekend`, `alternate_week_parity`
-  - Ces types utilisent la parité ISO des semaines
-  - Le champ est masqué dans l'interface pour ces types
+- ✅ **Used for**: 
+  - `alternate_week` (alternate weeks)
+  - `two_two_three` (2-2-3 pattern)
+  - `two_two_five_five` (2-2-5-5 pattern)
+  - `custom` (custom)
+- ❌ **Not used for**: `alternate_weekend`, `alternate_week_parity`
+  - These types use ISO week parity
+  - Field is hidden in interface for these types
 
-### Format des heures
+### Time Format
 
-- **Format attendu** : `HH:MM` (ex: `16:15`, `19:00`)
-- **Format accepté** : `HH:MM:SS` (les secondes sont ignorées)
-- **Validation** : Heures 00-23, Minutes 00-59
+- **Expected format**: `HH:MM` (e.g., `16:15`, `19:00`)
+- **Accepted format**: `HH:MM:SS` (seconds are ignored)
+- **Validation**: Hours 00-23, Minutes 00-59
 
 ---
 
-## 🔍 Vérification de la configuration
+## 🔍 Configuration Verification
 
-### Comment vérifier que votre configuration est correcte ?
+### How to verify your configuration is correct?
 
-1. **Vérifiez les weekends générés** :
-   - Allez dans le calendrier Home Assistant
-   - Les événements de garde doivent apparaître aux bons weekends
-   - Les labels doivent indiquer les extensions fériées si applicable
+1. **Check generated weekends**:
+   - Go to Home Assistant calendar
+   - Custody events should appear on correct weekends
+   - Labels should indicate holiday extensions if applicable
 
-2. **Vérifiez les attributs** :
-   - `next_arrival` : Prochaine date/heure de garde
-   - `next_departure` : Prochaine date/heure de fin de garde
-   - `custody_type` : Type de garde configuré
+2. **Check attributes**:
+   - `next_arrival`: Next custody date/time
+   - `next_departure`: Next custody end date/time
+   - `custody_type`: Configured custody type
 
-3. **Testez avec un jour férié** :
-   - Vérifiez qu'un weekend avec lundi férié s'étend bien au lundi
-   - Vérifiez qu'un weekend avec vendredi férié commence bien le jeudi
+3. **Test with a public holiday**:
+   - Verify that a weekend with Monday holiday extends to Monday
+   - Verify that a weekend with Friday holiday starts on Thursday
 
 ---
 
 ## 📞 Support
 
-Pour toute question sur la configuration de la garde normale :
-- Consultez la documentation complète dans le README principal
-- Vérifiez les logs Home Assistant pour les erreurs
-- Les règles de vacances sont documentées séparément
+For any questions about regular custody configuration:
+- Consult the complete documentation in the main README
+- Check Home Assistant logs for errors
+- Holiday rules are documented separately
 
 ---
 
-**Dernière mise à jour** : Version 1.8.x (alignée avec l’intégration Custody)
-
- 
+**Last updated**: Version 1.8.x (aligned with Custody integration)

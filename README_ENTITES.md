@@ -1,342 +1,344 @@
-# 📊 Guide des Entités - Custody
+# 📊 Entities Guide - Custody
 
-Ce guide explique toutes les entités créées par l'intégration **Custody** et comment les utiliser dans vos dashboards et automations Home Assistant.
+[🇫🇷 Version française](README_ENTITES.fr.md) | [🇬🇧 English version](README_ENTITES.md)
 
----
-
-## 📋 Table des matières
-
-1. [Vue d'ensemble](#vue-densemble)
-2. [Entités disponibles](#entités-disponibles)
-3. [Utilisation dans les dashboards](#utilisation-dans-les-dashboards)
-4. [Exemples d'automations](#exemples-dautomations)
-5. [Attributs disponibles](#attributs-disponibles)
+This guide explains all entities created by the **Custody** integration and how to use them in your Home Assistant dashboards and automations.
 
 ---
 
-## 🎯 Vue d'ensemble
+## 📋 Table of Contents
 
-L'intégration **Custody** crée automatiquement plusieurs entités pour chaque enfant configuré :
-
-- **1 Binary Sensor** : Statut de présence
-- **1 Calendar** : Calendrier complet
-- **1 Device Tracker** : Suivi de présence (utilisable dans l'entité Personne)
-- **7 Sensors** : Informations détaillées sur la garde et les vacances
-
-Toutes les entités sont préfixées par le **slug du prénom de l’enfant** : minuscules, espaces remplacés par des underscores (ex. « Sarah-Léa » → `sarah_lea`). Remplacez `{enfant}` dans les exemples par ce slug.
+1. [Overview](#overview)
+2. [Available Entities](#available-entities)
+3. [Dashboard Usage](#dashboard-usage)
+4. [Automation Examples](#automation-examples)
+5. [Available Attributes](#available-attributes)
 
 ---
 
-## 📦 Entités disponibles
+## 🎯 Overview
 
-### 1. Binary Sensor : Présence
+The **Custody** integration automatically creates several entities for each configured child:
 
-**Nom de l'entité** : `binary_sensor.{enfant}_presence`  
-**Nom affiché** : `{Enfant} Présence`
+- **1 Binary Sensor**: Presence status
+- **1 Calendar**: Complete calendar
+- **1 Device Tracker**: Presence tracking (usable in Person entity)
+- **7 Sensors**: Detailed information about custody and holidays
+
+All entities are prefixed by the **child's name slug**: lowercase, spaces replaced by underscores (e.g., "Sarah-Léa" → `sarah_lea`). Replace `{child}` in examples with this slug.
+
+---
+
+## 📦 Available Entities
+
+### 1. Binary Sensor: Presence
+
+**Entity Name**: `binary_sensor.{child}_presence`  
+**Display Name**: `{Child} Presence`
 
 #### Description
-Indique si l'enfant est actuellement en garde (garde classique ou vacances scolaires).
+Indicates whether the child is currently in custody (regular custody or school holidays).
 
-#### États
-- **`on`** : L'enfant est actuellement en garde
-- **`off`** : L'enfant n'est pas en garde actuellement
-- **`unavailable`** : Données non disponibles
+#### States
+- **`on`**: Child is currently in custody
+- **`off`**: Child is not currently in custody
+- **`unavailable`**: Data unavailable
 
-#### Attributs disponibles
-- `child_name` : Nom de l'enfant
-- `custody_type` : Type de garde classique configuré
-- `next_arrival` : Prochaine arrivée (ISO format)
-- `next_departure` : Prochain départ (ISO format)
-- `vacation_name` : Nom des vacances en cours (si applicable)
-- `next_vacation_name` : Nom des prochaines vacances
-- `next_vacation_start` : Début des prochaines vacances (ISO format)
-- `next_vacation_end` : Fin des prochaines vacances (ISO format)
-- `days_until_vacation` : Jours jusqu'aux prochaines vacances
-- `school_holidays_raw` : Liste complète des vacances scolaires
+#### Available Attributes
+- `child_name`: Child's name
+- `custody_type`: Configured regular custody type
+- `next_arrival`: Next arrival (ISO format)
+- `next_departure`: Next departure (ISO format)
+- `vacation_name`: Current holiday name (if applicable)
+- `next_vacation_name`: Next holiday name
+- `next_vacation_start`: Next holiday start (ISO format)
+- `next_vacation_end`: Next holiday end (ISO format)
+- `days_until_vacation`: Days until next holidays
+- `school_holidays_raw`: Complete list of school holidays
 
-#### Utilisation
-- **Dashboard** : Afficher un indicateur visuel de présence
-- **Automation** : Déclencher des actions quand l'enfant arrive/part
-
----
-
-### 2. Calendar : Calendrier complet
-
-**Nom de l'entité** : `calendar.{enfant}_calendar`  
-**Nom affiché** : `{Enfant} Calendrier`
-
-#### Description
-Calendrier complet affichant tous les événements de garde (weekends/semaines et vacances scolaires).
-
-#### Caractéristiques
-- Affiche tous les événements de garde classique (weekends, semaines)
-- Affiche tous les événements de vacances scolaires
-- Distinction visuelle entre garde classique et vacances scolaires
-- Compatible avec les vues calendrier de Home Assistant
-
-#### Types d'événements
-1. **Garde normale** : Weekends et semaines de garde classique
-2. **Vacances scolaires** : Périodes de vacances (Noël, Hiver, Printemps, Toussaint, Été)
-
-#### Utilisation
-- **Dashboard** : Intégrer dans une carte calendrier
-- **Automation** : Utiliser les événements pour déclencher des actions
-- **Vue calendrier** : Visualiser le planning complet
+#### Usage
+- **Dashboard**: Display visual presence indicator
+- **Automation**: Trigger actions when child arrives/leaves
 
 ---
 
-### 3. Device Tracker : Suivi de présence
+### 2. Calendar: Complete Calendar
 
-**Nom de l'entité** : `device_tracker.{enfant}_tracker`  
-**Nom affiché** : `{Enfant} Suivi`
+**Entity Name**: `calendar.{child}_calendar`  
+**Display Name**: `{Child} Calendar`
 
 #### Description
-Dispositif de suivi basé sur la présence de l'enfant (garde classique ou vacances scolaires). Cette entité peut être utilisée dans l'entité **Personne** de Home Assistant pour créer un suivi de présence complet.
+Complete calendar displaying all custody events (weekends/weeks and school holidays).
 
-#### États
-- **`home`** : L'enfant est actuellement en garde (présent)
-- **`not_home`** : L'enfant n'est pas en garde actuellement (absent)
-- **`unavailable`** : Données non disponibles
+#### Features
+- Displays all regular custody events (weekends, weeks)
+- Displays all school holiday events
+- Visual distinction between regular custody and school holidays
+- Compatible with Home Assistant calendar views
 
-#### Attributs disponibles
-- `child_name` : Nom de l'enfant
-- `source` : Source du suivi (`custody_schedule`)
-- `is_present` : État de présence (booléen)
+#### Event Types
+1. **Regular Custody**: Weekends and regular custody weeks
+2. **School Holidays**: Holiday periods (Christmas, Winter, Spring, All Saints' Day, Summer)
 
-#### Utilisation
-- **Personne Home Assistant** : Associer ce device tracker à une personne pour le suivi de présence
-- **Dashboard** : Afficher le statut de présence dans les cartes de personne
-- **Automation** : Déclencher des actions basées sur la présence/absence
-- **Zones** : Compatible avec le système de zones de Home Assistant
-
-#### Configuration d'une Personne
-1. Aller dans **Paramètres** → **Personnes et zones**
-2. Cliquer sur **Créer une personne**
-3. Nommer la personne (ex: "Sarah-Léa")
-4. Dans **Dispositifs de suivi**, sélectionner `device_tracker.{enfant}_tracker`
-5. Ajouter une photo si souhaité
-6. Sauvegarder
-
-#### Avantages
-- ✅ Intégration native avec le système de Personnes de Home Assistant
-- ✅ Mise à jour automatique toutes les 15 minutes
-- ✅ Historique des changements de statut
-- ✅ Utilisable dans les automations et les dashboards
-- ✅ Compatible avec les zones personnalisées
+#### Usage
+- **Dashboard**: Integrate into a calendar card
+- **Automation**: Use events to trigger actions
+- **Calendar View**: Visualize complete schedule
 
 ---
 
-### 4. Sensor : Prochaine arrivée
+### 3. Device Tracker: Presence Tracking
 
-**Nom de l'entité** : `sensor.{enfant}_next_arrival`  
-**Nom affiché** : `{Enfant} Prochaine arrivée`
+**Entity Name**: `device_tracker.{child}_tracker`  
+**Display Name**: `{Child} Tracker`
 
 #### Description
-Date et heure de la prochaine arrivée de l'enfant (garde classique ou vacances).
+Tracking device based on child presence (regular custody or school holidays). This entity can be used in Home Assistant's **Person** entity to create complete presence tracking.
+
+#### States
+- **`home`**: Child is currently in custody (present)
+- **`not_home`**: Child is not currently in custody (absent)
+- **`unavailable`**: Data unavailable
+
+#### Available Attributes
+- `child_name`: Child's name
+- `source`: Tracking source (`custody_schedule`)
+- `is_present`: Presence state (boolean)
+
+#### Usage
+- **Home Assistant Person**: Associate this device tracker with a person for presence tracking
+- **Dashboard**: Display presence status in person cards
+- **Automation**: Trigger actions based on presence/absence
+- **Zones**: Compatible with Home Assistant zone system
+
+#### Person Configuration
+1. Go to **Settings** → **People & Zones**
+2. Click **Create Person**
+3. Name the person (e.g., "Sarah-Léa")
+4. In **Device Trackers**, select `device_tracker.{child}_tracker`
+5. Add a photo if desired
+6. Save
+
+#### Advantages
+- ✅ Native integration with Home Assistant Person system
+- ✅ Automatic update every 15 minutes
+- ✅ Status change history
+- ✅ Usable in automations and dashboards
+- ✅ Compatible with custom zones
+
+---
+
+### 4. Sensor: Next Arrival
+
+**Entity Name**: `sensor.{child}_next_arrival`  
+**Display Name**: `{Child} Next Arrival`
+
+#### Description
+Date and time of child's next arrival (regular custody or holidays).
 
 #### Format
-- **État** : Objet Timestamp (Home Assistant gère automatiquement l'affichage selon votre langue)
-- **Classe** : `timestamp`
+- **State**: Timestamp object (Home Assistant automatically handles display based on your language)
+- **Class**: `timestamp`
 
-#### Utilisation
-- **Dashboard** : Afficher le prochain rendez-vous
-- **Automation** : Déclencher des actions avant l'arrivée
+#### Usage
+- **Dashboard**: Display next appointment
+- **Automation**: Trigger actions before arrival
 
 ---
 
-### 5. Sensor : Prochain départ
+### 5. Sensor: Next Departure
 
-**Nom de l'entité** : `sensor.{enfant}_next_departure`  
-**Nom affiché** : `{Enfant} Prochain départ`
+**Entity Name**: `sensor.{child}_next_departure`  
+**Display Name**: `{Child} Next Departure`
 
 #### Description
-Date et heure du prochain départ de l'enfant (garde classique ou vacances).
+Date and time of child's next departure (regular custody or holidays).
 
 #### Format
-- **État** : Objet Timestamp (affichage automatique)
-- **Classe** : `timestamp`
+- **State**: Timestamp object (automatic display)
+- **Class**: `timestamp`
 
-#### Utilisation
-- **Dashboard** : Afficher le prochain départ
-- **Automation** : Déclencher des actions avant le départ
+#### Usage
+- **Dashboard**: Display next departure
+- **Automation**: Trigger actions before departure
 
 ---
 
-### 6. Sensor : Jours restants
+### 6. Sensor: Days Remaining
 
-**Nom de l'entité** : `sensor.{enfant}_days_remaining`  
-**Nom affiché** : `{Enfant} Jours restants`
+**Entity Name**: `sensor.{child}_days_remaining`  
+**Display Name**: `{Child} Days Remaining`
 
 #### Description
-Nombre de jours restants avant le prochain changement de garde.
+Number of days remaining before next custody change.
 
 #### Format
-- **État** : Nombre décimal (ex: `3.5`)
-- **Unité** : `d` (affiché comme "jours" ou "days")
-- **Type** : `duration` (durée)
+- **State**: Decimal number (e.g., `3.5`)
+- **Unit**: `d` (displayed as "days")
+- **Type**: `duration` (duration)
 
-#### Utilisation
-- **Dashboard** : Afficher un compteur de jours
-- **Automation** : Déclencher des actions selon le nombre de jours restants
-
----
-
-### 7. Sensor : Période actuelle
-
-**Nom de l'entité** : `sensor.{enfant}_current_period`  
-**Nom affiché** : `{Enfant} Période actuelle`
-
-#### Description
-Période actuelle (garde classique, vacances scolaires, ou aucune).
-
-#### États possibles (valeurs brutes de l’entité)
-- `"school"` : Période hors vacances (garde classique : weekends/semaines)
-- `"vacation"` : Période de vacances scolaires
-- `None` ou vide : Aucune période de garde en cours (cas rare)
-
-#### Utilisation
-- **Dashboard** : Afficher le type de période actuelle
-- **Automation** : Adapter le comportement selon le type de période
+#### Usage
+- **Dashboard**: Display day counter
+- **Automation**: Trigger actions based on number of days remaining
 
 ---
 
-### 8. Sensor : Prochaines vacances
+### 7. Sensor: Current Period
 
-**Nom de l'entité** : `sensor.{enfant}_next_vacation_name`  
-**Nom affiché** : `{Enfant} Prochaines vacances`
+**Entity Name**: `sensor.{child}_current_period`  
+**Display Name**: `{Child} Current Period`
 
 #### Description
-Nom des prochaines vacances scolaires à venir.
+Current period (regular custody, school holidays, or none).
 
-#### États possibles
-- Valeurs retournées par l’API des vacances scolaires (ex. `"Vacances de Noël"`, `"Vacances d'Hiver"`, `"Vacances de Printemps"`, `"Vacances de la Toussaint"`, `"Vacances d'Été"`).
-- `unknown` ou vide : Aucune prochaine vacance programmée ou zone non configurée.
+#### Possible States (Raw Entity Values)
+- `"school"`: Non-holiday period (regular custody: weekends/weeks)
+- `"vacation"`: School holiday period
+- `None` or empty: No custody period in progress (rare case)
 
-#### Utilisation
-- **Dashboard** : Afficher le nom des prochaines vacances
-- **Automation** : Adapter le comportement selon le type de vacances
+#### Usage
+- **Dashboard**: Display current period type
+- **Automation**: Adapt behavior based on period type
 
 ---
 
-### 9. Sensor : Date des prochaines vacances
+### 8. Sensor: Next Holidays
 
-**Nom de l'entité** : `sensor.{enfant}_next_vacation_start`  
-**Nom affiché** : `{Enfant} Date des prochaines vacances`
+**Entity Name**: `sensor.{child}_next_vacation_name`  
+**Display Name**: `{Child} Next Holidays`
 
 #### Description
-Date et heure de début des prochaines vacances scolaires.
+Name of upcoming school holidays.
+
+#### Possible States
+- Values returned by school holiday API (e.g., `"Vacances de Noël"`, `"Vacances d'Hiver"`, `"Vacances de Printemps"`, `"Vacances de la Toussaint"`, `"Vacances d'Été"`).
+- `unknown` or empty: No upcoming holiday scheduled or zone not configured.
+
+#### Usage
+- **Dashboard**: Display next holiday name
+- **Automation**: Adapt behavior based on holiday type
+
+---
+
+### 9. Sensor: Next Holiday Start Date
+
+**Entity Name**: `sensor.{child}_next_vacation_start`  
+**Display Name**: `{Child} Next Holiday Start Date`
+
+#### Description
+Date and time of next school holiday start.
 
 #### Format
-- **État** : Objet Timestamp (affichage automatique)
-- **Classe** : `timestamp`
+- **State**: Timestamp object (automatic display)
+- **Class**: `timestamp`
 
-#### Utilisation
-- **Dashboard** : Afficher la date de début des prochaines vacances
-- **Automation** : Planifier des actions avant le début des vacances
+#### Usage
+- **Dashboard**: Display next holiday start date
+- **Automation**: Schedule actions before holiday start
 
 ---
 
-### 10. Sensor : Jours jusqu'aux vacances
+### 10. Sensor: Days Until Holidays
 
-**Nom de l'entité** : `sensor.{enfant}_days_until_vacation`  
-**Nom affiché** : `{Enfant} Jours jusqu'aux vacances`
+**Entity Name**: `sensor.{child}_days_until_vacation`  
+**Display Name**: `{Child} Days Until Holidays`
 
 #### Description
-Nombre de jours restants avant le début des prochaines vacances scolaires.
+Number of days remaining before next school holiday start.
 
 #### Format
-- **État** : Nombre décimal (ex: `15.5`)
-- **Unité** : `d`
-- **Type** : `duration` (durée)
+- **State**: Decimal number (e.g., `15.5`)
+- **Unit**: `d`
+- **Type**: `duration` (duration)
 
-#### Utilisation
-- **Dashboard** : Afficher un compteur de jours avant les vacances
-- **Automation** : Déclencher des actions avant les vacances
+#### Usage
+- **Dashboard**: Display day counter before holidays
+- **Automation**: Trigger actions before holidays
 
 ---
 
-## 🎨 Utilisation dans les dashboards
+## 🎨 Dashboard Usage
 
-### Exemple 0 : Carte Personne avec device tracker
+### Example 0: Person Card with Device Tracker
 
 ```yaml
 type: person
 entity: person.sarah_lea
 ```
 
-Cette carte affiche automatiquement :
-- Le statut de présence (home/not_home)
-- La photo de la personne
-- L'historique des changements de statut
-- Compatible avec les zones personnalisées
+This card automatically displays:
+- Presence status (home/not_home)
+- Person's photo
+- Status change history
+- Compatible with custom zones
 
 ---
 
-### Exemple 1 : Carte de présence simple
+### Example 1: Simple Presence Card
 
 ```yaml
 type: entities
-title: Custody - {Enfant}
+title: Custody - {Child}
 entities:
-  - entity: binary_sensor.{enfant}_presence
-    name: Présence
+  - entity: binary_sensor.{child}_presence
+    name: Presence
     icon: mdi:account-check
-  - entity: sensor.{enfant}_current_period
-    name: Période actuelle
-  - entity: sensor.{enfant}_days_remaining
-    name: Jours restants
+  - entity: sensor.{child}_current_period
+    name: Current Period
+  - entity: sensor.{child}_days_remaining
+    name: Days Remaining
 ```
 
-### Exemple 2 : Carte avec prochaines dates
+### Example 2: Card with Next Dates
 
 ```yaml
 type: vertical-stack
 cards:
   - type: entities
-    title: Prochaines dates
+    title: Next Dates
     entities:
-      - entity: sensor.{enfant}_next_arrival
-        name: Prochaine arrivée
+      - entity: sensor.{child}_next_arrival
+        name: Next Arrival
         icon: mdi:calendar-clock
-      - entity: sensor.{enfant}_next_departure
-        name: Prochain départ
+      - entity: sensor.{child}_next_departure
+        name: Next Departure
         icon: mdi:calendar-arrow-right
   - type: entities
-    title: Vacances scolaires
+    title: School Holidays
     entities:
-      - entity: sensor.{enfant}_next_vacation_name
-        name: Prochaines vacances
+      - entity: sensor.{child}_next_vacation_name
+        name: Next Holidays
         icon: mdi:calendar-star
-      - entity: sensor.{enfant}_days_until_vacation
-        name: Jours jusqu'aux vacances
+      - entity: sensor.{child}_days_until_vacation
+        name: Days Until Holidays
         icon: mdi:calendar-clock
 ```
 
-### Exemple 3 : Carte calendrier
+### Example 3: Calendar Card
 
 ```yaml
 type: calendar
 entities:
-  - entity: calendar.{enfant}_calendar
-title: Custody - {Enfant}
+  - entity: calendar.{child}_calendar
+title: Custody - {Child}
 ```
 
-### Exemple 3 bis : Carte calendrier (vue mensuelle)
+### Example 3 bis: Calendar Card (Monthly View)
 
 ```yaml
 type: calendar
 entities:
-  - entity: calendar.{enfant}_calendar
-title: Custody - {Enfant}
+  - entity: calendar.{child}_calendar
+title: Custody - {Child}
 initial_view: dayGridMonth
 ```
 
-### Exemple 4 : Carte personnalisée avec badges
+### Example 4: Custom Card with Badges
 
 ```yaml
 type: custom:mushroom-entity-card
-entity: binary_sensor.{enfant}_presence
-name: Présence
+entity: binary_sensor.{child}_presence
+name: Presence
 icon: mdi:account-check
 secondary_info: last-updated
 tap_action:
@@ -346,17 +348,17 @@ tap_action:
 
 ---
 
-## 🤖 Exemples d'automations
+## 🤖 Automation Examples
 
-### Automation 1 : Notification avant l'arrivée
+### Automation 1: Notification Before Arrival
 
 ```yaml
-alias: "Notification avant arrivée {Enfant}"
-description: "Envoie une notification 1 heure avant l'arrivée de l'enfant"
+alias: "Notification Before Arrival {Child}"
+description: "Sends notification 1 hour before child arrival"
 trigger:
   - platform: template
     value_template: >
-      {% set next_arrival = states('sensor.{enfant}_next_arrival') %}
+      {% set next_arrival = states('sensor.{child}_next_arrival') %}
       {% if next_arrival != 'unknown' and next_arrival != '' %}
         {{ (as_timestamp(next_arrival) - as_timestamp(now()) <= 3600) and
            (as_timestamp(next_arrival) - as_timestamp(now()) > 0) }}
@@ -365,29 +367,29 @@ trigger:
       {% endif %}
 condition:
   - condition: state
-    entity_id: binary_sensor.{enfant}_presence
+    entity_id: binary_sensor.{child}_presence
     state: 'off'
 action:
-  - service: notify.mobile_app_votre_telephone
+  - service: notify.mobile_app_your_phone
     data:
-      title: "Arrivée de {Enfant}"
-      message: "{{ states('sensor.{enfant}_next_arrival') }}"
+      title: "{Child} Arrival"
+      message: "{{ states('sensor.{child}_next_arrival') }}"
       data:
         actions:
           - action: "URI"
-            title: "Voir le planning"
+            title: "View Schedule"
             uri: "/lovelace/planning"
 ```
 
-### Automation 2 : Chauffage automatique avant arrivée
+### Automation 2: Automatic Heating Before Arrival
 
 ```yaml
-alias: "Chauffage avant arrivée {Enfant}"
-description: "Active le chauffage 2 heures avant l'arrivée"
+alias: "Heating Before Arrival {Child}"
+description: "Activates heating 2 hours before arrival"
 trigger:
   - platform: template
     value_template: >
-      {% set next_arrival = states('sensor.{enfant}_next_arrival') %}
+      {% set next_arrival = states('sensor.{child}_next_arrival') %}
       {% if next_arrival != 'unknown' and next_arrival != '' %}
         {{ (as_timestamp(next_arrival) - as_timestamp(now()) <= 7200) and
            (as_timestamp(next_arrival) - as_timestamp(now()) > 0) }}
@@ -396,24 +398,24 @@ trigger:
       {% endif %}
 condition:
   - condition: state
-    entity_id: binary_sensor.{enfant}_presence
+    entity_id: binary_sensor.{child}_presence
     state: 'off'
 action:
   - service: climate.set_temperature
     target:
-      entity_id: climate.salon
+      entity_id: climate.living_room
     data:
       temperature: 20
 ```
 
-### Automation 3 : Éclairage automatique pendant la garde
+### Automation 3: Automatic Lighting During Custody
 
 ```yaml
-alias: "Éclairage pendant garde {Enfant}"
-description: "Allume les lumières quand l'enfant est en garde le soir"
+alias: "Lighting During Custody {Child}"
+description: "Turns on lights when child is in custody in the evening"
 trigger:
   - platform: state
-    entity_id: binary_sensor.{enfant}_presence
+    entity_id: binary_sensor.{child}_presence
     to: 'on'
 condition:
   - condition: time
@@ -422,169 +424,169 @@ condition:
 action:
   - service: light.turn_on
     target:
-      entity_id: light.chambre_enfant
+      entity_id: light.child_room
     data:
       brightness: 100
 ```
 
-### Automation 4 : Notification avant les vacances
+### Automation 4: Notification Before Holidays
 
 ```yaml
-alias: "Notification avant vacances {Enfant}"
-description: "Notifie 7 jours avant le début des vacances"
+alias: "Notification Before Holidays {Child}"
+description: "Notifies 7 days before holiday start"
 trigger:
   - platform: template
     value_template: >
-      {% set days_until = states('sensor.{enfant}_days_until_vacation') | float(0) %}
+      {% set days_until = states('sensor.{child}_days_until_vacation') | float(0) %}
       {{ days_until <= 7 and days_until > 6 }}
 action:
-  - service: notify.mobile_app_votre_telephone
+  - service: notify.mobile_app_your_phone
     data:
-      title: "Vacances approchent !"
+      title: "Holidays Approaching!"
       message: >
-        Les {{ states('sensor.{enfant}_next_vacation_name') }} 
-        commencent dans {{ states('sensor.{enfant}_days_until_vacation') }} jours
+        The {{ states('sensor.{child}_next_vacation_name') }} 
+        start in {{ states('sensor.{child}_days_until_vacation') }} days
 ```
 
-### Automation 5 : Mode "Vacances" automatique
+### Automation 5: Automatic "Holiday" Mode
 
 ```yaml
-alias: "Mode vacances {Enfant}"
-description: "Active un mode spécial pendant les vacances scolaires"
+alias: "Holiday Mode {Child}"
+description: "Activates special mode during school holidays"
 trigger:
   - platform: state
-    entity_id: sensor.{enfant}_current_period
+    entity_id: sensor.{child}_current_period
     to: 'vacation'
 action:
   - service: input_select.select_option
     target:
-      entity_id: input_select.mode_maison
+      entity_id: input_select.house_mode
     data:
-      option: "Vacances"
-  - service: notify.mobile_app_votre_telephone
+      option: "Holidays"
+  - service: notify.mobile_app_your_phone
     data:
-      title: "Vacances scolaires"
-      message: "Mode vacances activé pour {{ states('sensor.{enfant}_next_vacation_name') }}"
+      title: "School Holidays"
+      message: "Holiday mode activated for {{ states('sensor.{child}_next_vacation_name') }}"
 ```
 
-### Automation 6 : Compteur de jours restants
+### Automation 6: Days Remaining Counter
 
 ```yaml
-alias: "Alerte fin de garde {Enfant}"
-description: "Notifie quand il reste moins de 1 jour de garde"
+alias: "End of Custody Alert {Child}"
+description: "Notifies when less than 1 day of custody remains"
 trigger:
   - platform: template
     value_template: >
-      {% set days_remaining = states('sensor.{enfant}_days_remaining') | float(0) %}
+      {% set days_remaining = states('sensor.{child}_days_remaining') | float(0) %}
       {{ days_remaining <= 1 and days_remaining > 0 }}
 condition:
   - condition: state
-    entity_id: binary_sensor.{enfant}_presence
+    entity_id: binary_sensor.{child}_presence
     state: 'on'
 action:
-  - service: notify.mobile_app_votre_telephone
+  - service: notify.mobile_app_your_phone
     data:
-      title: "Fin de garde proche"
+      title: "End of Custody Approaching"
       message: >
-        Il reste {{ states('sensor.{enfant}_days_remaining') }} jour(s) 
-        avant le prochain départ
+        {{ states('sensor.{child}_days_remaining') }} day(s) 
+        remaining before next departure
 ```
 
 ---
 
-## 📝 Attributs disponibles
+## 📝 Available Attributes
 
-Toutes les entités partagent des attributs communs accessibles via `{{ state_attr('entity_id', 'attribute_name') }}` :
+All entities share common attributes accessible via `{{ state_attr('entity_id', 'attribute_name') }}`:
 
-### Attributs de base
-- `child_name` : Nom de l'enfant
-- `custody_type` : Type de garde classique (ex: `alternate_week`, `alternate_weekend`)
-- `current_period` : Période actuelle — valeurs brutes : `school` (hors vacances), `vacation` (vacances scolaires), ou vide
+### Base Attributes
+- `child_name`: Child's name
+- `custody_type`: Regular custody type (e.g., `alternate_week`, `alternate_weekend`)
+- `current_period`: Current period — raw values: `school` (outside holidays), `vacation` (school holidays), or empty
 
-### Attributs de dates
-- `next_arrival` : Prochaine arrivée (ISO format)
-- `next_departure` : Prochain départ (ISO format)
-- `days_remaining` : Jours restants avant changement
+### Date Attributes
+- `next_arrival`: Next arrival (ISO format)
+- `next_departure`: Next departure (ISO format)
+- `days_remaining`: Days remaining before change
 
-### Attributs de vacances
-- `vacation_name` : Nom des vacances en cours
-- `next_vacation_name` : Nom des prochaines vacances
-- `next_vacation_start` : Début des prochaines vacances (ISO format)
-- `next_vacation_end` : Fin des prochaines vacances (ISO format)
-- `days_until_vacation` : Jours jusqu'aux prochaines vacances
-- `school_holidays_raw` : Liste complète des vacances (format JSON)
+### Holiday Attributes
+- `vacation_name`: Current holiday name
+- `next_vacation_name`: Next holiday name
+- `next_vacation_start`: Next holiday start (ISO format)
+- `next_vacation_end`: Next holiday end (ISO format)
+- `days_until_vacation`: Days until next holidays
+- `school_holidays_raw`: Complete holiday list (JSON format)
 
-### Attributs de configuration
-- `location` : Lieu d'échange (si configuré)
-- `notes` : Notes personnalisées (si configurées)
-- `zone` : Zone scolaire (A, B, C, etc.)
-
----
-
-## 💡 Conseils d'utilisation
-
-### Pour les dashboards
-1. **Utilisez des cartes conditionnelles** pour afficher différentes informations selon la période
-2. **Combinez plusieurs entités** dans une seule carte pour une vue d'ensemble
-3. **Utilisez les icônes** pour rendre les cartes plus visuelles
-4. **Créez des vues séparées** pour la garde classique et les vacances scolaires
-
-### Pour les automations
-1. **Vérifiez toujours l'état** de `binary_sensor.{enfant}_presence` avant d'agir
-2. **Utilisez les templates** pour calculer les délais avant les événements
-3. **Testez avec des valeurs de test** avant de mettre en production
-4. **Ajoutez des conditions** pour éviter les déclenchements multiples
-
-### Bonnes pratiques
-- **Nommez clairement** vos automations avec le nom de l'enfant
-- **Documentez** vos automations personnalisées
-- **Testez** régulièrement que les entités sont à jour
-- **Utilisez les attributs** pour obtenir plus d'informations que l'état seul
+### Configuration Attributes
+- `location`: Exchange location (if configured)
+- `notes`: Custom notes (if configured)
+- `zone`: School zone (A, B, C, etc.)
 
 ---
 
-## 🔧 Dépannage
+## 💡 Usage Tips
 
-### Les entités ne se mettent pas à jour
-1. Vérifiez que l'intégration est bien configurée
-2. Redémarrez Home Assistant
-3. Vérifiez les logs pour des erreurs
+### For Dashboards
+1. **Use conditional cards** to display different information based on period
+2. **Combine multiple entities** in a single card for an overview
+3. **Use icons** to make cards more visual
+4. **Create separate views** for regular custody and school holidays
 
-### Les dates sont incorrectes
-1. Vérifiez la configuration de la zone scolaire
-2. Vérifiez que `reference_year_custody` (garde classique) et la répartition des vacances sont correctement configurés
-3. Vérifiez les horaires d'arrivée/départ
+### For Automations
+1. **Always check the state** of `binary_sensor.{child}_presence` before acting
+2. **Use templates** to calculate delays before events
+3. **Test with test values** before going to production
+4. **Add conditions** to avoid multiple triggers
 
-### Les vacances ne s'affichent pas
-1. Vérifiez que la zone scolaire est correcte
-2. Vérifiez la connexion à l'API des vacances scolaires
-3. Consultez les logs pour des erreurs API
-
----
-
-## 📚 Ressources supplémentaires
-
-- **Documentation garde classique** : `README_CONFIG_GARDE.md`
-- **Documentation vacances scolaires** : `README_CONFIG_VACANCES.md`
-- **Documentation principale** : `README.md`
+### Best Practices
+- **Name clearly** your automations with the child's name
+- **Document** your custom automations
+- **Test regularly** that entities are up to date
+- **Use attributes** to get more information than state alone
 
 ---
 
-## ✅ Récapitulatif des entités
+## 🔧 Troubleshooting
 
-| Type | Entity ID | Nom affiché | Description |
-|------|-----------|-------------|-------------|
-| Binary Sensor | `binary_sensor.{enfant}_presence` | {Enfant} Présence | Statut de présence |
-| Calendar | `calendar.{enfant}_calendar` | {Enfant} Calendrier | Calendrier complet |
-| Device Tracker | `device_tracker.{enfant}_tracker` | {Enfant} Tracker / Suivi | Présence (home/not_home) |
-| Sensor | `sensor.{enfant}_next_arrival` | {Enfant} Prochaine arrivée | Date/heure arrivée |
-| Sensor | `sensor.{enfant}_next_departure` | {Enfant} Prochain départ | Date/heure départ |
-| Sensor | `sensor.{enfant}_days_remaining` | {Enfant} Jours restants | Jours avant changement |
-| Sensor | `sensor.{enfant}_current_period` | {Enfant} Période actuelle | `school` / `vacation` |
-| Sensor | `sensor.{enfant}_next_vacation_name` | {Enfant} Prochaines vacances | Nom des vacances |
-| Sensor | `sensor.{enfant}_next_vacation_start` | {Enfant} Date des prochaines vacances | Date de début |
-| Sensor | `sensor.{enfant}_days_until_vacation` | {Enfant} Jours jusqu'aux vacances | Jours avant vacances |
+### Entities Don't Update
+1. Verify that the integration is properly configured
+2. Restart Home Assistant
+3. Check logs for errors
+
+### Dates Are Incorrect
+1. Check school zone configuration
+2. Verify that `reference_year_custody` (regular custody) and holiday distribution are correctly configured
+3. Check arrival/departure times
+
+### Holidays Don't Display
+1. Verify that the school zone is correct
+2. Check connection to school holiday API
+3. Check logs for API errors
 
 ---
 
-**Note** : Remplacez `{enfant}` par le slug du prénom de l’enfant (minuscules, espaces → underscores, ex. `lucas`, `sarah_lea`).
+## 📚 Additional Resources
+
+- **Regular custody documentation**: `README_CONFIG_GARDE.md`
+- **School holiday documentation**: `README_CONFIG_VACANCES.md`
+- **Main documentation**: `README.md`
+
+---
+
+## ✅ Entity Summary
+
+| Type | Entity ID | Display Name | Description |
+|------|-----------|--------------|-------------|
+| Binary Sensor | `binary_sensor.{child}_presence` | {Child} Presence | Presence status |
+| Calendar | `calendar.{child}_calendar` | {Child} Calendar | Complete calendar |
+| Device Tracker | `device_tracker.{child}_tracker` | {Child} Tracker | Presence (home/not_home) |
+| Sensor | `sensor.{child}_next_arrival` | {Child} Next Arrival | Arrival date/time |
+| Sensor | `sensor.{child}_next_departure` | {Child} Next Departure | Departure date/time |
+| Sensor | `sensor.{child}_days_remaining` | {Child} Days Remaining | Days before change |
+| Sensor | `sensor.{child}_current_period` | {Child} Current Period | `school` / `vacation` |
+| Sensor | `sensor.{child}_next_vacation_name` | {Child} Next Holidays | Holiday name |
+| Sensor | `sensor.{child}_next_vacation_start` | {Child} Next Holiday Start Date | Start date |
+| Sensor | `sensor.{child}_days_until_vacation` | {Child} Days Until Holidays | Days before holidays |
+
+---
+
+**Note**: Replace `{child}` with the child's name slug (lowercase, spaces → underscores, e.g., `lucas`, `sarah_lea`).
