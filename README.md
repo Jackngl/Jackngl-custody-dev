@@ -1,10 +1,17 @@
 # 👨‍👩‍👧‍👦 Custody (Custody Schedule)
 
-![Version](https://img.shields.io/badge/version-1.8.36-blue.svg)
+<div align="center">
+  <img src="logo.png" alt="Custody Logo" width="400"/>
+  <br/>
+  <img src="icon.png" alt="Custody Icon" width="128"/>
+</div>
+
+![Version](https://img.shields.io/badge/version-1.8.35-blue.svg)
 ![Home Assistant](https://img.shields.io/badge/Home%20Assistant-2025.12-green.svg)
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 
 Intégration Home Assistant pour planifier facilement les gardes alternées, suivre les périodes en cours et automatiser la maison (chauffage, notifications, dashboard…).
+
 
 ## 📋 Table des matières
 
