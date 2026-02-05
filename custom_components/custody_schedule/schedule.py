@@ -184,12 +184,38 @@ class CustodyScheduleManager:
 
         self._arrival_time = self._parse_time(config.get(CONF_ARRIVAL_TIME, "08:00"))
         self._departure_time = self._parse_time(config.get(CONF_DEPARTURE_TIME, "19:00"))
+        self._end_day = config.get(CONF_END_DAY, "sunday").lower()
 
     def update_config(self, new_config: dict[str, Any]) -> None:
         """Update stored config (used when options change)."""
         self._config = {**self._config, **new_config}
         self._arrival_time = self._parse_time(self._config.get(CONF_ARRIVAL_TIME, "08:00"))
         self._departure_time = self._parse_time(self._config.get(CONF_DEPARTURE_TIME, "19:00"))
+        self._end_day = self._config.get(CONF_END_DAY, "sunday").lower()
+
+    def _calculate_end_date(self, start_date: datetime, holidays: set[date]) -> datetime:
+        """Calculate the end date based on start_date, configured end_day and holidays."""
+        target_end_weekday = WEEKDAY_LOOKUP.get(self._end_day, 6)  # Default Sunday
+        
+        # Calculate days until the target weekday
+        days_to_end = (target_end_weekday - start_date.weekday()) % 7
+        
+        # Special case: if end_day is same as start_day (e.g. Monday to Monday)
+        # we want a full week, not 0 days.
+        if days_to_end == 0 and self._end_day != "sunday": # Usually we want at least 1 day if it's a "school return" mode
+             # For alternate weeks (Monday to Monday), we need 7 days
+             days_to_end = 7
+        elif days_to_end == 0 and start_date.weekday() == 4: # Friday to Friday weekend? Unusual but possible
+             days_to_end = 7
+
+        end_date = start_date + timedelta(days=days_to_end)
+        
+        # Holiday extension loop
+        # While the return day is a holiday, keep extending
+        while end_date.date() in holidays:
+            end_date += timedelta(days=1)
+            
+        return end_date
 
     def set_manual_windows(self, ranges: Iterable[dict[str, Any]]) -> None:
         """Store manual presence windows defined via service."""
@@ -608,41 +634,39 @@ class CustodyScheduleManager:
                 iso_week = pointer.isocalendar().week
                 week_parity = iso_week % 2  # 0 = even, 1 = odd
                 if week_parity == target_parity:
-                    # Weekend: Friday 16:15 -> Sunday 19:00
+                    # Weekend: Friday 16:15 -> Sunday 19:00 (default)
+                    # or Friday -> Monday morning if configured.
                     # pointer is Monday of the week, so:
-                    # Friday = pointer + 4, Saturday = pointer + 5, Sunday = pointer + 6
+                    # Friday = pointer + 4, Saturday = pointer + 5, Sunday = pointer + 6, Monday = pointer + 7
                     friday = pointer + timedelta(days=4)
-                    sunday = pointer + timedelta(days=6)
-                    monday = pointer + timedelta(days=7)
-                    thursday = pointer + timedelta(days=3)
+                    
+                    # Resolve base end day
+                    target_end_weekday = WEEKDAY_LOOKUP.get(self._end_day, 6)
+                    days_to_end = (target_end_weekday - pointer.weekday()) % 7
+                    base_end_date = pointer + timedelta(days=days_to_end)
+
+                    # Check if end falls before start (weekend spanning)
+                    if base_end_date < friday:
+                        base_end_date += timedelta(days=7)
 
                     # Default start/end
                     window_start = friday
-                    window_end = sunday
+                    window_end = base_end_date
                     label_suffix = ""
 
                     # Check if weekend falls during vacation period
                     # If yes, don't apply public holiday extensions (vacations dominate)
                     weekend_in_vacation = (
                         self._is_in_vacation_period(friday, vacation_windows)
-                        or self._is_in_vacation_period(sunday, vacation_windows)
-                        or self._is_in_vacation_period(monday, vacation_windows)
+                        or self._is_in_vacation_period(window_end, vacation_windows)
                     )
 
-                    # Only apply public holidays if NOT during vacation period
-                    if not weekend_in_vacation:
-                        friday_is_holiday = friday.date() in holidays
-                        monday_is_holiday = monday.date() in holidays
-
-                        if friday_is_holiday:
-                            # Holiday on Friday: start Thursday instead
-                            window_start = thursday
-                            label_suffix = " + Holiday"
-
-                        if monday_is_holiday:
-                            # Holiday on Monday: extend to Monday
-                            window_end = monday
-                            label_suffix = " + Holiday" if not label_suffix else " + Long Weekend"
+                    # Resolve end date using helper
+                    window_end = self._calculate_end_date(window_start, holidays)
+                    label_suffix = " + Holiday" if (window_end - window_start).days > (target_end_weekday - pointer.weekday()) % 7 + (7 if (target_end_weekday - pointer.weekday()) % 7 == 0 else 0) else ""
+                    # Simplification of suffix logic for weekends
+                    if window_end.date() != base_end_date.date():
+                        label_suffix = " + Holiday"
 
                     # Get label from custody type definition
                     type_label = CUSTODY_TYPES.get(custody_type, {}).get("label", "Garde")
@@ -675,56 +699,30 @@ class CustodyScheduleManager:
             )
             target_parity = 0 if reference_year == "even" else 1  # 0 = even, 1 = odd
 
-            # Ajuster le pointer pour commencer avant ou à la date actuelle
-            # Si le pointer est trop loin dans le passé, avancer jusqu'à une semaine proche de maintenant
-            # On avance de 2 semaines à la fois pour respecter l'alternance
             while pointer < now - timedelta(days=365):
-                pointer += timedelta(days=14)  # Sauter 2 semaines (alternance)
-                # Vérifier que le pointer a toujours la bonne parité
+                pointer += timedelta(days=14)
                 if pointer.isocalendar()[1] % 2 != target_parity:
-                    # Si on a perdu la parité, ajuster d'une semaine
                     pointer += timedelta(days=7)
 
             while pointer < horizon:
                 iso_week = pointer.isocalendar().week
-                week_parity = iso_week % 2  # 0 = even, 1 = odd
+                week_parity = iso_week % 2
                 if week_parity == target_parity:
-                    # Week: Monday to Sunday (7 days)
+                    # Week starts Monday
                     monday = pointer
-                    sunday = pointer + timedelta(days=6)
-                    next_monday = pointer + timedelta(days=7)
-                    previous_friday = pointer - timedelta(days=3)
-
-                    # Default start/end
-                    window_start = monday
-                    window_end = sunday
+                    
+                    # Resolve end date using helper
+                    target_end_weekday = WEEKDAY_LOOKUP.get(self._end_day, 6)
+                    days_to_end = (target_end_weekday - monday.weekday()) % 7
+                    if days_to_end == 0: days_to_end = 7
+                    base_end_date = monday + timedelta(days=days_to_end)
+                    
+                    window_end = self._calculate_end_date(window_start, holidays)
+                    
                     label_suffix = ""
-
-                    # Check if week falls during vacation period
-                    # If yes, don't apply public holiday extensions (vacations dominate)
-                    week_in_vacation = (
-                        self._is_in_vacation_period(monday, vacation_windows)
-                        or self._is_in_vacation_period(sunday, vacation_windows)
-                        or self._is_in_vacation_period(next_monday, vacation_windows)
-                    )
-
-                    # Only apply public holidays if NOT during vacation period
-                    if not week_in_vacation:
-                        # Check if Monday is a holiday (extend from previous Friday)
-                        monday_is_holiday = monday.date() in holidays
-                        # Check if Friday is a holiday (extend to next Monday)
-                        friday = pointer + timedelta(days=4)
-                        friday_is_holiday = friday.date() in holidays
-
-                        if monday_is_holiday:
-                            # Holiday on Monday: start previous Friday instead
-                            window_start = previous_friday
-                            label_suffix = " + Holiday"
-
-                        if friday_is_holiday:
-                            # Holiday on Friday: extend to next Monday
-                            window_end = next_monday
-                            label_suffix = " + Holiday" if not label_suffix else " + Long Weekend"
+                    # Extension check for label suffix
+                    if window_end.date() > base_end_date.date():
+                        label_suffix = " + Holiday"
 
                     # Get label from custody type definition
                     type_label = CUSTODY_TYPES.get(custody_type, {}).get("label", "Garde")
@@ -766,19 +764,32 @@ class CustodyScheduleManager:
             offset = timedelta()
             for segment in pattern:
                 segment_start = pointer + offset
-                # For other cases: if segment is N days, it spans from day 0 to day N-1
-                segment_end = segment_start + timedelta(days=segment["days"] - 1)
+                # For cycled patterns, we use the return day only for the "ON" segments
                 if segment["state"] == "on":
+                    # Get public holidays for current/next year to be passed to helper
+                    country = self._config.get(CONF_COUNTRY, "FR")
+                    alsace_moselle = self._config.get(CONF_ALSACE_MOSELLE, False)
+                    holidays = get_public_holidays(now.year, country, alsace_moselle) | get_public_holidays(
+                        now.year + 1, country, alsace_moselle
+                    )
+                    
+                    # Resolve end date using the return day logic
+                    segment_end = self._calculate_end_date(segment_start, holidays)
+                    
                     # Get label from custody type definition
                     type_label = CUSTODY_TYPES.get(custody_type, {}).get("label", "Garde")
                     windows.append(
                         CustodyWindow(
                             start=self._apply_time(segment_start, self._arrival_time),
                             end=self._apply_time(segment_end, self._departure_time),
-                            label=f"Custody - {type_label}",
+                            # No suffix here to keep it simple for generic patterns
+                            label=f"Garde - {type_label}",
                             source="pattern",
                         )
                     )
+                else:
+                    # Off segments just advance the offset
+                    pass
                 offset += timedelta(days=segment["days"])
             pointer += timedelta(days=cycle_days)
 

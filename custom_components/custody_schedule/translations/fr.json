@@ -20,6 +20,7 @@
           "start_day": "Jour de départ",
           "arrival_time": "Heure d'arrivée",
           "departure_time": "Heure de départ",
+          "end_day": "Jour de fin / retour",
           "location": "Lieu d'échange"
         }
       },
@@ -191,6 +192,7 @@
         "data": {
           "arrival_time": "Heure d'arrivée",
           "departure_time": "Heure de départ",
+          "end_day": "Jour de fin / retour",
           "location": "Lieu d'échange"
         }
       },
@@ -277,13 +279,18 @@
         "custom": "Personnalisé"
       }
     },
-    "reference_year": {
+    "start_day": {
       "options": {
-        "even": "Paire",
-        "odd": "Impaire"
+        "monday": "Lundi",
+        "tuesday": "Mardi",
+        "wednesday": "Mercredi",
+        "thursday": "Jeudi",
+        "friday": "Vendredi",
+        "saturday": "Samedi",
+        "sunday": "Dimanche"
       }
     },
-    "start_day": {
+    "end_day": {
       "options": {
         "monday": "Lundi",
         "tuesday": "Mardi",

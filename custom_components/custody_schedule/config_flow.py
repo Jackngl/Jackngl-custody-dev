@@ -175,6 +175,19 @@ def _start_day_selector() -> selector.SelectSelector:
     )
 
 
+def _end_day_selector() -> selector.SelectSelector:
+    """Create an end day selector with localized labels."""
+    days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    options_list = [{"value": day, "label": day} for day in days]
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=options_list,
+            mode=selector.SelectSelectorMode.DROPDOWN,
+            translation_key="end_day",
+        )
+    )
+
+
 def _summer_split_selector() -> selector.SelectSelector:
     """Create a selector for summer split mode (halves vs quarters)."""
     options_list = [
@@ -417,6 +430,9 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(
                 CONF_DEPARTURE_TIME, default=self._data.get(CONF_DEPARTURE_TIME, "19:00")
             ): selector.TimeSelector(),
+            vol.Required(
+                CONF_END_DAY, default=self._data.get(CONF_END_DAY, "sunday")
+            ): _end_day_selector(),
             vol.Optional(CONF_LOCATION, default=self._data.get(CONF_LOCATION, "")): selector.TextSelector(),
         }
 
@@ -702,6 +718,9 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                 vol.Required(
                     CONF_DEPARTURE_TIME, default=data.get(CONF_DEPARTURE_TIME, "19:00")
                 ): selector.TimeSelector(),
+                vol.Required(
+                    CONF_END_DAY, default=data.get(CONF_END_DAY, "sunday")
+                ): _end_day_selector(),
                 vol.Optional(CONF_LOCATION, default=data.get(CONF_LOCATION, "")): cv.string,
             }
         )

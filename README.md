@@ -79,11 +79,13 @@ Restart Home Assistant then add the integration via the interface.
   - Alternate weekends
   - Custom pattern (day-by-day selection over 14 days)
   - 2-2-3 or 2-2-5-5 patterns
+  - Flexible **Return Day** (e.g., Sunday evening or Monday morning)
   - Exceptions and custom rules (fixed dates)
 
 - **Holiday Management**:
   - Automatic holiday alternation each year
   - Priority management (holidays and parental holidays properly split regular weekends)
+  - **Dynamic Holiday Extensions**: Automatically extends custody if the return day falls on a public holiday (e.g., Monday school return deferred to Tuesday if Monday is holiday)
   - Flexible rules: 1st/2nd week, halves, even/odd weeks, July/August
   - Automatic Mother's Day and Father's Day management
 

@@ -20,6 +20,7 @@
           "start_day": "Start day",
           "arrival_time": "Arrival time",
           "departure_time": "Departure time",
+          "end_day": "End day / Return",
           "location": "Exchange location"
         }
       },
@@ -145,6 +146,7 @@
         "data": {
           "arrival_time": "Arrival time",
           "departure_time": "Departure time",
+          "end_day": "End day / Return",
           "location": "Exchange location"
         }
       },
@@ -240,6 +242,17 @@
       }
     },
     "start_day": {
+      "options": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+      }
+    },
+    "end_day": {
       "options": {
         "monday": "Monday",
         "tuesday": "Tuesday",

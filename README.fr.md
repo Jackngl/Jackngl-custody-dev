@@ -79,11 +79,13 @@ Redémarrez Home Assistant puis ajoutez l'intégration via l'interface.
   - Week-end alterné
   - Rythme personnalisé (sélection jour par jour sur 14 jours)
   - Rythmes 2-2-3 ou 2-2-5-5
+  - **Jour de retour** flexible (ex: Dimanche soir ou Lundi matin à l'école)
   - Exceptions et règles personnalisées (dates fixes)
 
 - **Gestion des vacances** :
   - Alternance automatique des vacances chaque année
   - Gestion des priorités (vacances et fêtes parentales découpent proprement les week-ends)
+  - **Extensions de garde intelligentes** : Report automatique de la fin de garde si le jour de retour est un jour férié (ex: retour école lundi férié reporté au mardi)
   - Règles flexibles : 1ère/2ème semaine, moitiés, semaines paires/impaires, juillet/août
   - Gestion automatique des Fêtes des Mères et des Pères
 
