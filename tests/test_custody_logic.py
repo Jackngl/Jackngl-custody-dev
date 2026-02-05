@@ -101,14 +101,18 @@ class TestCustodyLogic(unittest.TestCase):
         # Friday Oct 3, 2025
         now = datetime(2025, 10, 3, 8, 0, tzinfo=timezone.utc)
 
-        # This calls the general loop which uses _reference_start (returns aware)
+        # The general loop uses self._reference_start(now, custody_type)
+        # reference_year for 2025 (odd) with default "even" config will be 2024.
+        # base = Jan 1, 2024 (Monday). start_day default = monday. delta = 0.
+        # So reference starts Mon Jan 1, 2024.
         windows = manager._generate_pattern_windows(now)
 
         self.assertTrue(len(windows) > 0)
-        # First window should be 2 days (index 0 and 1) -> start Friday, end Saturday
-        # because duration = days-1 = 1 day. (Friday 08:00 to Saturday 19:00)
-        self.assertEqual(windows[0].start.date(), date(2025, 10, 3))
-        self.assertEqual(windows[0].end.date(), date(2025, 10, 4))
+        # 2-2-3 pattern starts with 2 days ON.
+        # First window starts at reference: 2024-01-01.
+        self.assertEqual(windows[0].start.date(), date(2024, 1, 1))
+        # duration = days-1 = 1 day -> ends 2024-01-02.
+        self.assertEqual(windows[0].end.date(), date(2024, 1, 2))
 
 
 if __name__ == "__main__":
