@@ -430,9 +430,7 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             vol.Required(
                 CONF_DEPARTURE_TIME, default=self._data.get(CONF_DEPARTURE_TIME, "19:00")
             ): selector.TimeSelector(),
-            vol.Required(
-                CONF_END_DAY, default=self._data.get(CONF_END_DAY, "sunday")
-            ): _end_day_selector(),
+            vol.Required(CONF_END_DAY, default=self._data.get(CONF_END_DAY, "sunday")): _end_day_selector(),
             vol.Optional(CONF_LOCATION, default=self._data.get(CONF_LOCATION, "")): selector.TextSelector(),
         }
 
@@ -718,9 +716,7 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
                 vol.Required(
                     CONF_DEPARTURE_TIME, default=data.get(CONF_DEPARTURE_TIME, "19:00")
                 ): selector.TimeSelector(),
-                vol.Required(
-                    CONF_END_DAY, default=data.get(CONF_END_DAY, "sunday")
-                ): _end_day_selector(),
+                vol.Required(CONF_END_DAY, default=data.get(CONF_END_DAY, "sunday")): _end_day_selector(),
                 vol.Optional(CONF_LOCATION, default=data.get(CONF_LOCATION, "")): cv.string,
             }
         )

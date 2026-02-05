@@ -196,25 +196,27 @@ class CustodyScheduleManager:
     def _calculate_end_date(self, start_date: datetime, holidays: set[date]) -> datetime:
         """Calculate the end date based on start_date, configured end_day and holidays."""
         target_end_weekday = WEEKDAY_LOOKUP.get(self._end_day, 6)  # Default Sunday
-        
+
         # Calculate days until the target weekday
         days_to_end = (target_end_weekday - start_date.weekday()) % 7
-        
+
         # Special case: if end_day is same as start_day (e.g. Monday to Monday)
         # we want a full week, not 0 days.
-        if days_to_end == 0 and self._end_day != "sunday": # Usually we want at least 1 day if it's a "school return" mode
-             # For alternate weeks (Monday to Monday), we need 7 days
-             days_to_end = 7
-        elif days_to_end == 0 and start_date.weekday() == 4: # Friday to Friday weekend? Unusual but possible
-             days_to_end = 7
+        if (
+            days_to_end == 0 and self._end_day != "sunday"
+        ):  # Usually we want at least 1 day if it's a "school return" mode
+            # For alternate weeks (Monday to Monday), we need 7 days
+            days_to_end = 7
+        elif days_to_end == 0 and start_date.weekday() == 4:  # Friday to Friday weekend? Unusual but possible
+            days_to_end = 7
 
         end_date = start_date + timedelta(days=days_to_end)
-        
+
         # Holiday extension loop
         # While the return day is a holiday, keep extending
         while end_date.date() in holidays:
             end_date += timedelta(days=1)
-            
+
         return end_date
 
     def set_manual_windows(self, ranges: Iterable[dict[str, Any]]) -> None:
@@ -639,7 +641,7 @@ class CustodyScheduleManager:
                     # pointer is Monday of the week, so:
                     # Friday = pointer + 4, Saturday = pointer + 5, Sunday = pointer + 6, Monday = pointer + 7
                     friday = pointer + timedelta(days=4)
-                    
+
                     # Resolve base end day
                     target_end_weekday = WEEKDAY_LOOKUP.get(self._end_day, 6)
                     days_to_end = (target_end_weekday - pointer.weekday()) % 7
@@ -656,14 +658,19 @@ class CustodyScheduleManager:
 
                     # Check if weekend falls during vacation period
                     # If yes, don't apply public holiday extensions (vacations dominate)
-                    weekend_in_vacation = (
-                        self._is_in_vacation_period(friday, vacation_windows)
-                        or self._is_in_vacation_period(window_end, vacation_windows)
-                    )
+                    weekend_in_vacation = self._is_in_vacation_period(
+                        friday, vacation_windows
+                    ) or self._is_in_vacation_period(window_end, vacation_windows)
 
                     # Resolve end date using helper
                     window_end = self._calculate_end_date(window_start, holidays)
-                    label_suffix = " + Holiday" if (window_end - window_start).days > (target_end_weekday - pointer.weekday()) % 7 + (7 if (target_end_weekday - pointer.weekday()) % 7 == 0 else 0) else ""
+                    label_suffix = (
+                        " + Holiday"
+                        if (window_end - window_start).days
+                        > (target_end_weekday - pointer.weekday()) % 7
+                        + (7 if (target_end_weekday - pointer.weekday()) % 7 == 0 else 0)
+                        else ""
+                    )
                     # Simplification of suffix logic for weekends
                     if window_end.date() != base_end_date.date():
                         label_suffix = " + Holiday"
@@ -710,15 +717,16 @@ class CustodyScheduleManager:
                 if week_parity == target_parity:
                     # Week starts Monday
                     monday = pointer
-                    
+
                     # Resolve end date using helper
                     target_end_weekday = WEEKDAY_LOOKUP.get(self._end_day, 6)
                     days_to_end = (target_end_weekday - monday.weekday()) % 7
-                    if days_to_end == 0: days_to_end = 7
+                    if days_to_end == 0:
+                        days_to_end = 7
                     base_end_date = monday + timedelta(days=days_to_end)
-                    
+
                     window_end = self._calculate_end_date(window_start, holidays)
-                    
+
                     label_suffix = ""
                     # Extension check for label suffix
                     if window_end.date() > base_end_date.date():
@@ -772,10 +780,10 @@ class CustodyScheduleManager:
                     holidays = get_public_holidays(now.year, country, alsace_moselle) | get_public_holidays(
                         now.year + 1, country, alsace_moselle
                     )
-                    
+
                     # Resolve end date using the return day logic
                     segment_end = self._calculate_end_date(segment_start, holidays)
-                    
+
                     # Get label from custody type definition
                     type_label = CUSTODY_TYPES.get(custody_type, {}).get("label", "Garde")
                     windows.append(
