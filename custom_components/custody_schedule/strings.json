@@ -17,7 +17,8 @@
         "data": {
           "custody_type": "Custody type",
           "reference_year_custody": "Custody year (parity)",
-          "start_day": "Start day"
+          "start_day": "Start day",
+          "weekend_start_day": "Weekend start day"
         }
       },
       "schedule": {
@@ -252,6 +253,12 @@
       "options": {
         "even": "Even",
         "odd": "Odd"
+      }
+    },
+    "weekend_start_day": {
+      "options": {
+        "friday": "Friday",
+        "saturday": "Saturday"
       }
     },
     "start_day": {

@@ -30,6 +30,7 @@ from .const import (
     CONF_CUSTODY_TYPE,
     CONF_CUSTOM_PATTERN,
     CONF_DEPARTURE_TIME,
+    CONF_ENABLE_CUSTODY,
     CONF_END_DAY,
     CONF_EXCEPTIONS_LIST,
     CONF_EXCEPTIONS_RECURRING,
@@ -46,6 +47,7 @@ from .const import (
     CONF_START_DAY,
     CONF_SUMMER_SPLIT_MODE,
     CONF_VACATION_SPLIT_MODE,
+    CONF_WEEKEND_START_DAY,
     CONF_ZONE,
     CUSTODY_TYPES,
     DEFAULT_COUNTRY,
@@ -407,6 +409,7 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         custody_type = self._data.get(CONF_CUSTODY_TYPE, "alternate_week")
         show_start_day = custody_type not in ("alternate_weekend", "alternate_week_parity")
+        show_weekend_start = custody_type == "alternate_weekend"
 
         reference_year_default = self._data.get(
             CONF_REFERENCE_YEAR_CUSTODY, self._data.get(CONF_REFERENCE_YEAR, "even")
@@ -421,6 +424,21 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             schema_dict[
                 vol.Required(CONF_START_DAY, default=self._data.get(CONF_START_DAY, "monday"))
             ] = _start_day_selector()
+
+        # Add weekend start day selector for alternate_weekend
+        if show_weekend_start:
+            schema_dict[
+                vol.Optional(CONF_WEEKEND_START_DAY, default=self._data.get(CONF_WEEKEND_START_DAY, "friday"))
+            ] = selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=[
+                        {"value": "friday", "label": "Friday"},
+                        {"value": "saturday", "label": "Saturday"},
+                    ],
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                    translation_key="weekend_start_day",
+                )
+            )
 
         return self.async_show_form(
             step_id="custody",
