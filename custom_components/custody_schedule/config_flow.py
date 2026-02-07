@@ -407,7 +407,7 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input:
             self._data.update(user_input)
             return await self.async_step_schedule()
-        
+
         # Si la garde est désactivée, passer directement aux vacances
         if not self._data.get(CONF_ENABLE_CUSTODY, True):
             return await self.async_step_vacations()
@@ -548,30 +548,22 @@ class CustodyScheduleConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_VACATION_SPLIT_MODE, default=vacation_split_default)
             ] = _vacation_split_selector()
             schema_dict[
-                vol.Required(
-                    CONF_SUMMER_SPLIT_MODE, default=self._data.get(CONF_SUMMER_SPLIT_MODE, "half")
-                )
+                vol.Required(CONF_SUMMER_SPLIT_MODE, default=self._data.get(CONF_SUMMER_SPLIT_MODE, "half"))
             ] = _summer_split_selector()
 
         # Alsace-Moselle only for France
         if country_default == "FR":
             schema_dict[
-                vol.Optional(
-                    CONF_ALSACE_MOSELLE, default=self._data.get(CONF_ALSACE_MOSELLE, False)
-                )
+                vol.Optional(CONF_ALSACE_MOSELLE, default=self._data.get(CONF_ALSACE_MOSELLE, False))
             ] = selector.BooleanSelector()
 
         # Parental role only if custody enabled
         if enable_custody:
             schema_dict[
-                vol.Required(
-                    CONF_PARENTAL_ROLE, default=self._data.get(CONF_PARENTAL_ROLE, "none")
-                )
+                vol.Required(CONF_PARENTAL_ROLE, default=self._data.get(CONF_PARENTAL_ROLE, "none"))
             ] = _parental_role_selector()
             schema_dict[
-                vol.Optional(
-                    CONF_AUTO_PARENT_DAYS, default=self._data.get(CONF_AUTO_PARENT_DAYS, True)
-                )
+                vol.Optional(CONF_AUTO_PARENT_DAYS, default=self._data.get(CONF_AUTO_PARENT_DAYS, True))
             ] = selector.BooleanSelector()
 
         return self.async_show_form(step_id="vacations", data_schema=vol.Schema(schema_dict))
@@ -694,11 +686,11 @@ class CustodyScheduleOptionsFlow(config_entries.OptionsFlow):
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Show options menu."""
         enable_custody = self._data.get(CONF_ENABLE_CUSTODY, True)
-        
+
         menu_options = ["features"]
         if enable_custody:
             menu_options.extend(["custody", "schedule"])
-        
+
         menu_options.extend(["vacations", "exceptions", "advanced"])
 
         return self.async_show_menu(

@@ -644,7 +644,7 @@ class CustodyScheduleManager:
                 if week_parity == target_parity:
                     # Determine weekend start day from config (Friday or Saturday)
                     weekend_start_day = self._config.get(CONF_WEEKEND_START_DAY, "friday")
-                    
+
                     # pointer is Monday of the week, so:
                     # pointer is Monday: +4=Fri, +5=Sat, +6=Sun, +7=Mon
                     if weekend_start_day == "saturday":
