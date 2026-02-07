@@ -481,7 +481,7 @@ L'application utilise **deux masques de saisie distincts** :
    - **+ Extension automatique avec jours fériés**
 
 2. **Masque "Vacances scolaires"** :
-   - Zone scolaire (A/B/C)
+   - Zone scolaire ou Subdivision (A/B/C, Cantons, etc.)
    - Répartition des moitiés
    - **Découpage été** : choisissez entre "2 Moitiés" (juillet/août) ou "4 Quinzaines" (alternance tous les 15j).
    - **Calcul équitable** : l'été est divisé en parts égales basées sur les dates réelles des vacances.

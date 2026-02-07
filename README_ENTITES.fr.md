@@ -519,7 +519,7 @@ Toutes les entités partagent des attributs communs accessibles via `{{ state_at
 ### Attributs de configuration
 - `location` : Lieu d'échange (si configuré)
 - `notes` : Notes personnalisées (si configurées)
-- `zone` : Zone scolaire (A, B, C, etc.)
+- `zone` : Zone scolaire ou Subdivision (A, B, C, Cantons, etc.)
 
 ---
 

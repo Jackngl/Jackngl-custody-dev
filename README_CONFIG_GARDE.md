@@ -479,7 +479,7 @@ The application uses **two distinct input forms**:
    - **+ Automatic extension with public holidays**
 
 2. **"School Holidays" Form**:
-   - School zone (A/B/C)
+   - School zone or Subdivision (A/B/C, Cantons, etc.)
    - Half distribution
    - **Summer split**: choose between "2 Halves" (July/August) or "4 Fortnights" (alternating every 15 days).
    - **Fair calculation**: summer is divided into equal parts based on actual holiday dates.

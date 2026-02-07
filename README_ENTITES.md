@@ -519,7 +519,7 @@ All entities share common attributes accessible via `{{ state_attr('entity_id', 
 ### Configuration Attributes
 - `location`: Exchange location (if configured)
 - `notes`: Custom notes (if configured)
-- `zone`: School zone (A, B, C, etc.)
+- `zone`: School zone or Subdivision (A, B, C, Cantons, etc.)
 
 ---
 

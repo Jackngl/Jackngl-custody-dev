@@ -59,25 +59,29 @@ School holidays > Public holidays > Regular custody
 
 ---
 
-## 🌐 School Holiday API
+### Supported Countries and APIs
 
-The application uses the **official French Ministry of Education API** to automatically retrieve school holiday dates.
+The application automatically selects the appropriate provider based on the configured country:
 
-### Data Source
+| Country | Source | Holidays Type | Regional Support |
+|---------|--------|---------------|------------------|
+| **France** | `data.education.gouv.fr` | School Holidays | Zones A, B, C, Corsica, DOM-TOM |
+| **Belgium** | `openholidaysapi.org` | School Holidays | Communities (French, Dutch, German) |
+| **Switzerland** | `openholidaysapi.org` | School Holidays | Cantons (GE, VD, VS, etc.) |
+| **Luxembourg** | `openholidaysapi.org` | School Holidays | National |
+| **Quebec (CA)** | `canada-holidays.ca` | Public Holidays | Quebec General (Statutory) |
 
-- **API**: `https://data.education.gouv.fr/api/records/1.0/search/`
-- **Dataset**: `fr-en-calendrier-scolaire`
-- **Format**: JSON
-- **Update**: Automatic (15-minute cache)
+> [!NOTE]
+> For Quebec, the integration focuses on **Statutory Holidays** as school holidays vary significantly between local school boards.
 
-### How It Works
+### How It Works (France)
 
 1. **Automatic retrieval**: The application queries the API for your school zone
 2. **Cache**: Data is cached to avoid repeated calls
 3. **School years**: The API uses format "2024-2025" (September to June)
 4. **Filtering**: Only future or current holidays are displayed
 
-### Supported Zones
+### School Zones (France)
 
 | Zone | Code | Main Cities |
 |------|------|-------------|
@@ -107,10 +111,17 @@ Some dates may be manually corrected in the code if the API is incomplete or inc
 
 ### Required Fields
 
-#### 1. **School Zone** (`zone`)
-- **Description**: Geographic zone for school holidays
-- **Values**: `"A"`, `"B"`, `"C"`, `"Corse"`, `"DOM-TOM"`
-- **Example**: `"C"` for Zone C (Paris, Créteil, etc.)
+#### 1. **Country** (`country`)
+- **Description**: Target country for holiday data
+- **Values**: `"FR"` (France), `"BE"` (Belgium), `"CH"` (Switzerland), `"LU"` (Luxembourg), `"CA_QC"` (Quebec)
+
+#### 2. **School Zone / Subdivision** (`zone`)
+- **Description**: Geographic zone or subdivision for holidays
+- **Values**:
+  - **France**: `"A"`, `"B"`, `"C"`, `"Corse"`, `"DOM-TOM"`
+  - **Switzerland**: Cantons (`"CH-GE"`, `"CH-VD"`, etc.)
+  - **Belgium**: Communities (`"FR"`, `"NL"`, `"DE"`)
+  - **Quebec**: `"QC"` (General)
 
 #### 2. **Reference Year for Holidays** (`reference_year_vacations`)
 - **Description**: Indicates for which **years (even or odd)** you have school holidays

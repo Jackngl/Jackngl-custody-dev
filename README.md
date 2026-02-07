@@ -89,11 +89,10 @@ Restart Home Assistant then add the integration via the interface.
   - Flexible rules: 1st/2nd week, halves, even/odd weeks, July/August
   - Automatic Mother's Day and Father's Day management
 
-### 🌍 International Support
-
-- **French School Zones** : A, B, C, Corsica, DOM-TOM
-- **Official API** : `data.education.gouv.fr` for school holidays
-- **Multi-country Support** : Belgium, Switzerland, Luxembourg, Quebec
+- **International Support** :
+  - 🇫🇷 **France** : Official API (`data.education.gouv.fr`) for school holidays (Zones A, B, C, etc.)
+  - 🇧🇪 **Belgium**, 🇨🇭 **Switzerland**, 🇱🇺 **Luxembourg** : OpenHolidays API for school holidays (Communities/Cantons/National)
+  - 🇨🇦 **Canada (Quebec)** : Canada-Holidays API for public holidays (Statutory Holidays)
 - **Customizable API URL** for alternative sources
 - **Built-in Test Service** to diagnose issues
 
@@ -119,14 +118,16 @@ Configuration is done entirely through the Home Assistant user interface.
 ### Configuration Steps
 
 1. **Child Information** : Name, icon, photo
-2. **Custody Type** : Select pattern (alternate week, weekend, etc.)
-3. **School Zone and Holidays** : Zone (A/B/C/Corsica/DOM-TOM) and holiday rules
-4. **Advanced Options** :
+2. **Custody Pattern** : Select rhythm (alternate week, weekend, etc.) and reference year
+3. **Times and Return Day** : Arrival/Departure times, school return day, and location
+4. **Country and Vacations** :
+   - Country selection (France, Belgium, Switzerland, Luxembourg, Canada)
+   - Zone or Subdivision (A/B/C for FR, Cantons for CH, Communities for BE)
+   - Holiday split rules (halves, parity)
+5. **Advanced Options** :
    - Custom notes
    - Notifications
    - Calendar sync (Google Calendar)
-   - Target calendar + sync window
-   - Sync interval
    - Exceptions (advanced UI)
    - Custom API URL (optional)
 

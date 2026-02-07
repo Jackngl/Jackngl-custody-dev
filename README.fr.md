@@ -89,11 +89,10 @@ Redémarrez Home Assistant puis ajoutez l'intégration via l'interface.
   - Règles flexibles : 1ère/2ème semaine, moitiés, semaines paires/impaires, juillet/août
   - Gestion automatique des Fêtes des Mères et des Pères
 
-### 🌍 Support international
-
-- **Zones scolaires françaises** : A, B, C, Corse, DOM-TOM
-- **API officielle** : `data.education.gouv.fr` pour les vacances scolaires
-- **Support multi-pays** : Belgique, Suisse, Luxembourg, Québec
+- **Support International** :
+  - 🇫🇷 **France** : API officielle (`data.education.gouv.fr`) pour les vacances scolaires (Zones A, B, C, etc.)
+  - 🇧🇪 **Belgique**, 🇨🇭 **Suisse**, 🇱🇺 **Luxembourg** : API OpenHolidays pour les vacances scolaires (Communautés/Cantons/National)
+  - 🇨🇦 **Canada (Québec)** : API Canada-Holidays pour les jours fériés (Fériés officiels)
 - **URL d'API personnalisable** pour sources alternatives
 - **Service de test** intégré pour diagnostiquer les problèmes
 
@@ -119,14 +118,16 @@ La configuration se fait entièrement via l'interface utilisateur Home Assistant
 ### Étapes de configuration
 
 1. **Informations de l'enfant** : Nom, icône, photo
-2. **Type de garde** : Sélection du rythme (semaine alternée, week-end, etc.)
-3. **Zone scolaire et vacances** : Zone (A/B/C/Corse/DOM-TOM) et règles de vacances
-4. **Options avancées** :
+2. **Rythme de garde** : Sélection du rythme (semaine alternée, weekend, etc.) et année de référence
+3. **Horaires et Jour de retour** : Heures d'arrivée/départ, jour de reprise de l'école et lieu
+4. **Pays et Vacances** :
+   - Choix du pays (France, Belgique, Suisse, Luxembourg, Canada)
+   - Zone ou Subdivision (A/B/C pour FR, Cantons pour CH, Communautés pour BE)
+   - Règles de partage des vacances (moitiés, parité)
+5. **Options avancées** :
    - Notes personnalisées
    - Notifications
    - Synchronisation calendrier (Google Calendar)
-   - Calendrier cible + fenêtre de synchro
-   - Intervalle de synchro
    - Exceptions (UI avancée)
    - URL d'API personnalisée (optionnel)
 

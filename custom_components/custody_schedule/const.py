@@ -86,9 +86,9 @@ FRENCH_ZONES_WITH_CITIES: dict[str, str] = {
 # Subdivisions pour les autres pays (OpenHolidays API codes)
 SUBDIVISIONS: dict[str, dict[str, str]] = {
     "BE": {
-        "BE-BE": "Communauté française",
-        "BE-VLG": "Vlaamse Gemeenschap",
-        "BE-BRU": "Bruxelles",
+        "FR": "Communauté française",
+        "NL": "Vlaamse Gemeenschap",
+        "DE": "Deutschsprachige Gemeinschaft",
     },
     "CH": {
         "CH-GE": "Genève",

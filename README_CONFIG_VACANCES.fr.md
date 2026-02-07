@@ -59,25 +59,29 @@ Vacances scolaires > Jours fériés > Garde classique
 
 ---
 
-## 🌐 API des vacances scolaires
+### Pays supportés et APIs
 
-L'application utilise l'**API officielle du Ministère de l'Éducation Nationale** pour récupérer automatiquement les dates des vacances scolaires.
+L'application sélectionne automatiquement le fournisseur approprié selon le pays configuré :
 
-### Source de données
+| Pays | Source | Type de vacances | Support régional |
+|------|--------|------------------|------------------|
+| **France** | `data.education.gouv.fr` | Scolaires | Zones A, B, C, Corse, DOM-TOM |
+| **Belgique** | `openholidaysapi.org` | Scolaires | Communautés (FR, NL, DE) |
+| **Suisse** | `openholidaysapi.org` | Scolaires | Cantons (GE, VD, VS, etc.) |
+| **Luxembourg** | `openholidaysapi.org` | Scolaires | National |
+| **Québec (CA)** | `canada-holidays.ca` | Fériés | Québec Général (Officiels) |
 
-- **API** : `https://data.education.gouv.fr/api/records/1.0/search/`
-- **Dataset** : `fr-en-calendrier-scolaire`
-- **Format** : JSON
-- **Mise à jour** : Automatique (cache de 15 minutes)
+> [!NOTE]
+> Pour le Québec, l'intégration se concentre sur les **jours fériés officiels**, les vacances scolaires étant très variables selon les commissions scolaires locales.
 
-### Fonctionnement
+### Fonctionnement (France)
 
 1. **Récupération automatique** : L'application interroge l'API pour votre zone scolaire
 2. **Cache** : Les données sont mises en cache pour éviter les appels répétés
 3. **Années scolaires** : L'API utilise le format "2024-2025" (septembre à juin)
 4. **Filtrage** : Seules les vacances futures ou en cours sont affichées
 
-### Zones supportées
+### Zones scolaires (France)
 
 | Zone | Code | Villes principales |
 |------|------|-------------------|
@@ -107,10 +111,17 @@ Certaines dates peuvent être corrigées manuellement dans le code si l'API est 
 
 ### Champs obligatoires
 
-#### 1. **Zone scolaire** (`zone`)
-- **Description** : Zone géographique pour les vacances scolaires
-- **Valeurs** : `"A"`, `"B"`, `"C"`, `"Corse"`, `"DOM-TOM"`
-- **Exemple** : `"C"` pour la zone C (Paris, Créteil, etc.)
+#### 1. **Pays** (`country`)
+- **Description** : Pays cible pour les données de vacances
+- **Valeurs** : `"FR"` (France), `"BE"` (Belgique), `"CH"` (Suisse), `"LU"` (Luxembourg), `"CA_QC"` (Québec)
+
+#### 2. **Zone Scolaire / Subdivision** (`zone`)
+- **Description** : Zone géographique ou subdivision pour les vacances
+- **Valeurs** :
+  - **France** : `"A"`, `"B"`, `"C"`, `"Corse"`, `"DOM-TOM"`
+  - **Suisse** : Cantons (`"CH-GE"`, `"CH-VD"`, etc.)
+  - **Belgique** : Communautés (`"FR"`, `"NL"`, `"DE"`)
+  - **Québec** : `"QC"` (Général)
 
 #### 2. **Année de référence pour les vacances** (`reference_year_vacations`)
 - **Description** : Indique pour quelles **années (paires ou impaires)** vous avez des vacances scolaires
