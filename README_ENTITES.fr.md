@@ -56,6 +56,15 @@ Indique si l'enfant est actuellement en garde (garde classique ou vacances scola
 - `days_until_vacation` : Jours jusqu'aux prochaines vacances
 - `school_holidays_raw` : Liste complète des vacances scolaires
 
+#### 🏠 Comportement en Mode Garde Complète
+Si la **gestion de la garde est désactivée** :
+- `custody_type` : Devient `None`.
+- `next_arrival` : Devient `None` (forcé).
+- `next_departure` : Devient `None` (forcé).
+- `vacation_name` : Affiche la période de vacances complète sans découpage.
+- **Sensors** : Les capteurs correspondants afficheront `unknown` ou `None`.
+
+
 #### Utilisation
 - **Dashboard** : Afficher un indicateur visuel de présence
 - **Automation** : Déclencher des actions quand l'enfant arrive/part

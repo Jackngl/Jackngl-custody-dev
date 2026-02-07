@@ -56,6 +56,15 @@ Indicates whether the child is currently in custody (regular custody or school h
 - `days_until_vacation`: Days until next holidays
 - `school_holidays_raw`: Complete list of school holidays
 
+#### 🏠 Behavior in Full Custody Mode
+If **custody management is disabled**:
+- `custody_type`: Becomes `None`.
+- `next_arrival`: Becomes `None` (forced).
+- `next_departure`: Becomes `None` (forced).
+- `vacation_name`: Displays the full vacation period without splitting.
+- **Sensors**: The corresponding sensors will show `unknown` or `None`.
+
+
 #### Usage
 - **Dashboard**: Display visual presence indicator
 - **Automation**: Trigger actions when child arrives/leaves
