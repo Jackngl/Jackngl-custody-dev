@@ -16,6 +16,10 @@ This PR implements two major features to improve flexibility and usability:
         *   Vacation step hides irrelevant fields (split mode, parental role).
         *   Schedule generator creates only vacation events (and holidays if configured), no custody weekends/weeks.
 
+3.  **UI & Experience Improvements**
+    *   **Dynamic Vacation Configuration**: Split vacation setup into two steps. First select Country, then select Zone (filtered by country).
+    *   **Refined Translations**: Improved French translations and removed redundant help text.
+
 ## Changes
 
 -   `const.py`: Added `CONF_WEEKEND_START_DAY` and `CONF_ENABLE_CUSTODY`.
@@ -23,10 +27,11 @@ This PR implements two major features to improve flexibility and usability:
     -   Added conditional logic to show/hide steps based on `enable_custody`.
     -   Added "Features" menu in OptionsFlow.
     -   Added weekend start day selector.
+    -   **Split `vacations` step** into `vacations` (Country) and `vacations_details` (Zone/Rules).
 -   `schedule.py`:
     -   Updated `alternate_weekend` logic to respect start day config.
     -   Updated generator to return empty list if custody is disabled.
--   `strings.json`: Added translations for new fields and menus.
+-   `strings.json` / `translations/fr.json`: Added translations for new fields, menus, and steps.
 
 ## Verification
 
@@ -34,3 +39,4 @@ This PR implements two major features to improve flexibility and usability:
 -   [x] **Vacations-Only Mode**: Verified flow skips custody steps and generates no custody events.
 -   [x] **Full Mode**: Verified standard behavior allows full configuration.
 -   [x] **Options Flow**: Verified toggling features updates menu and behavior.
+-   [x] **Dynamic Zones**: Verified choosing a country updates available zones in the next step.
