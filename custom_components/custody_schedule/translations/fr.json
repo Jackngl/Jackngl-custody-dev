@@ -10,6 +10,9 @@
           "icon": "Icône (recherche mdi, ex: baby-boy, baby-girl)",
           "photo": "Photo / Avatar (URL ou /local/image.jpg)",
           "enable_custody": "Activer la gestion de la garde alternée"
+        },
+        "data_description": {
+          "enable_custody": "Si désactivé, le système gérera uniquement les vacances scolaires."
         }
       },
       "custody": {
@@ -18,7 +21,8 @@
         "data": {
           "custody_type": "Type de garde",
           "reference_year_custody": "Mon année de garde (parité)",
-          "start_day": "Jour de départ"
+          "start_day": "Jour de départ",
+          "weekend_start_day": "Début du week-end"
         }
       },
       "schedule": {
@@ -65,9 +69,14 @@
           "zone": "Zone scolaire",
           "vacation_split_mode": "Répartition des moitiés",
           "school_level": "Niveau scolaire",
-          "alsace_moselle": "Activer les jours fériés Alsace-Moselle (Vendredi Saint, St-Étienne)",
-          "parental_role": "Mon rôle (Papa/Maman)",
-          "auto_parent_days": "Gestion auto de la Fête des mères/pères"
+          "alsace_moselle": "Jours fériés Alsace-Moselle",
+          "parental_role": "Mon rôle",
+          "auto_parent_days": "Gestion auto Fête des mères/pères"
+        },
+        "data_description": {
+          "alsace_moselle": "Cochez pour inclure le Vendredi Saint et la Saint-Étienne.",
+          "parental_role": "Définit qui a la garde pour la fête des pères/mères.",
+          "auto_parent_days": "Si activé, le parent correspondant aura la garde ce jour-là."
         }
       },
       "advanced": {
@@ -218,15 +227,26 @@
       },
       "vacations": {
         "title": "Vacances scolaires",
-        "description": "Modifier la zone scolaire et les règles de garde pendant les vacances. Les vacances priment sur la garde classique. La répartition choisie s'applique automatiquement à toutes les vacances, y compris l'été.",
+        "description": "Sélectionnez le pays.",
         "data": {
-          "country": "Pays",
+          "country": "Pays"
+        }
+      },
+      "vacations_details": {
+        "title": "Détails des vacances",
+        "description": "Configuration de la zone et des règles spécifiques.",
+        "data": {
           "zone": "Zone scolaire",
           "vacation_split_mode": "Répartition des moitiés",
           "school_level": "Niveau scolaire",
-          "alsace_moselle": "Activer les jours fériés Alsace-Moselle (Vendredi Saint, St-Étienne)",
-          "parental_role": "Mon rôle (Papa/Maman)",
-          "auto_parent_days": "Gestion auto de la Fête des mères/pères"
+          "alsace_moselle": "Jours fériés Alsace-Moselle",
+          "parental_role": "Mon rôle",
+          "auto_parent_days": "Gestion auto Fête des mères/pères"
+        },
+        "data_description": {
+          "alsace_moselle": "Cochez pour inclure le Vendredi Saint et la Saint-Étienne.",
+          "parental_role": "Définit qui a la garde pour la fête des pères/mères.",
+          "auto_parent_days": "Si activé, le parent correspondant aura la garde ce jour-là."
         }
       },
       "advanced": {
